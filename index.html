@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Le Petit Dauphin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --ink: #241c14;
+    --parchment: #f1e6cd;
+    --parchment-dark: #e2d3ab;
+    --royal-blue: #1b2a4a;
+    --royal-blue-deep: #101b32;
+    --gold: #c9a227;
+    --gold-light: #e8cf7a;
+    --burgundy: #6b2737;
+    --burgundy-light: #8a3648;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'EB Garamond', serif;
+    background: radial-gradient(ellipse at top, var(--royal-blue) 0%, var(--royal-blue-deep) 70%);
+    color: var(--parchment);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .game {
+    width: 100%;
+    max-width: 460px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    font-size: 1.6rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    margin: 0 0 4px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  .subtitle {
+    text-align: center;
+    font-style: italic;
+    color: var(--parchment-dark);
+    margin: 0 0 20px;
+    font-size: 0.95rem;
+  }
+
+  .courtyard {
+    position: relative;
+    height: 220px;
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, #2d3f66 0%, #24365a 55%, #3a2e22 55%, #4a3a28 100%);
+    border: 3px solid var(--gold);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+
+  .courtyard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 40px);
+  }
+
+  .flag {
+    position: absolute;
+    top: 10px;
+    font-size: 1.3rem;
+    opacity: 0.85;
+  }
+  .flag.left { left: 16px; }
+  .flag.right { right: 16px; }
+
+  .character {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    width: 60px;
+    height: 80px;
+    transition: left 2.2s ease-in-out;
+    animation: bob 1.4s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .robe {
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+    width: 40px;
+    height: 45px;
+    background: var(--burgundy);
+    border-radius: 6px 6px 16px 16px;
+    transition: background 0.6s;
+  }
+  .robe.royal { background: var(--royal-blue); box-shadow: 0 0 0 2px var(--gold); }
+
+  .head {
+    position: absolute;
+    bottom: 40px;
+    left: 15px;
+    width: 30px;
+    height: 30px;
+    background: #e8c39e;
+    border-radius: 50%;
+  }
+
+  .crown {
+    position: absolute;
+    bottom: 62px;
+    left: 15px;
+    width: 30px;
+    height: 12px;
+    opacity: 0;
+    transition: opacity 0.6s;
+    font-size: 18px;
+    text-align: center;
+    line-height: 1;
+  }
+  .crown.visible { opacity: 1; }
+
+  .mood {
+    position: absolute;
+    top: -22px;
+    left: 8px;
+    font-size: 1.1rem;
+    transition: opacity 0.3s;
+  }
+
+  .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat-label {
+    width: 90px;
+    font-size: 0.9rem;
+    color: var(--gold-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-bar-bg {
+    flex: 1;
+    height: 14px;
+    background: var(--royal-blue-deep);
+    border: 1px solid var(--gold);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .stat-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--burgundy-light), var(--gold));
+    transition: width 0.5s ease;
+  }
+
+  .royaume-row .stat-bar-fill {
+    background: linear-gradient(90deg, #3a5a8a, var(--gold-light));
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .seal-btn {
+    background: var(--parchment);
+    color: var(--ink);
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    box-shadow: 0 3px 0 var(--burgundy), 0 5px 8px rgba(0,0,0,0.3);
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .seal-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--burgundy), 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .seal-btn .icon { font-size: 1.3rem; margin-bottom: 2px; }
+
+  .chronicle {
+    background: var(--parchment);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    font-style: italic;
+    min-height: 44px;
+    border: 1px solid var(--gold);
+    text-align: center;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 27, 50, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .quiz-box {
+    background: var(--parchment);
+    color: var(--ink);
+    border: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 22px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .quiz-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--burgundy);
+    text-align: center;
+    margin: 0 0 8px;
+  }
+
+  .quiz-question {
+    font-size: 1.05rem;
+    text-align: center;
+    margin: 0 0 18px;
+    font-weight: 600;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .quiz-option {
+    background: white;
+    border: 2px solid var(--royal-blue);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  .quiz-option:hover { background: var(--gold-light); }
+  .quiz-option.correct { background: #a8c98a; border-color: #4a7a2e; }
+  .quiz-option.wrong { background: #d99a9a; border-color: var(--burgundy); }
+
+  .quiz-feedback {
+    margin-top: 14px;
+    font-style: italic;
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  .quiz-continue {
+    display: block;
+    margin: 14px auto 0;
+    background: var(--royal-blue);
+    color: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: none;
+  }
+  .quiz-continue.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="game">
+  <h1>Le Petit Dauphin</h1>
+  <p class="subtitle">Élevez-le bien, il deviendra Roi de France</p>
+
+  <div class="courtyard">
+    <span class="flag left">⚜️</span>
+    <span class="flag right">⚜️</span>
+    <div class="character" id="character">
+      <div class="mood" id="mood">😊</div>
+      <div class="crown" id="crown">👑</div>
+      <div class="head"></div>
+      <div class="robe" id="robe"></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-row">
+      <div class="stat-label">🍞 Faim</div>
+      <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-faim" style="width:70%"></div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">🎉 Bonheur</div>
+      <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-bonheur" style="width:70%"></div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">📖 Savoir</div>
+      <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-savoir" style="width:20%"></div></div>
+    </div>
+    <div class="stat-row royaume-row">
+      <div class="stat-label">⚜️ Royaume</div>
+      <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-royaume" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="seal-btn" onclick="feed()"><span class="icon">🍞</span>Nourrir</button>
+    <button class="seal-btn" onclick="play()"><span class="icon">🎭</span>Jouer</button>
+    <button class="seal-btn" onclick="teach()"><span class="icon">📜</span>Instruire</button>
+    <button class="seal-btn" onclick="rest()"><span class="icon">🛏️</span>Coucher</button>
+  </div>
+
+  <div class="chronicle" id="chronicle">Bienvenue à la cour. Le petit dauphin vous observe.</div>
+</div>
+
+<div class="modal-overlay" id="quizOverlay">
+  <div class="quiz-box">
+    <p class="quiz-eyebrow">Leçon du précepteur</p>
+    <p class="quiz-question" id="quizQuestion"></p>
+    <div class="quiz-options" id="quizOptions"></div>
+    <p class="quiz-feedback" id="quizFeedback"></p>
+    <button class="quiz-continue" id="quizContinue" onclick="closeQuiz()">Poursuivre</button>
+  </div>
+</div>
+
+<script>
+let stats = { faim: 70, bonheur: 70, savoir: 20 };
+let royaume = 0;
+let isKing = false;
+let position = 40;
+
+const chronicleMessages = {
+  feed: ["Le dauphin dévore une belle miche de pain.", "\"Encore !\" réclame-t-il joyeusement."],
+  play: ["Vous jouez aux quilles dans la cour.", "Le dauphin rit aux éclats."],
+  teach: ["Le précepteur lui enseigne le latin.", "Le dauphin fronce les sourcils, concentré."],
+  rest: ["Le dauphin fait la sieste sous un dais.", "Il se repose, bercé par les ménestrels."],
+  crowned: "Le royaume est en paix. Le dauphin est couronné Roi de France !",
+  low: "Le dauphin semble contrarié. Occupez-vous de lui.",
+};
+
+function setChronicle(text) {
+  document.getElementById('chronicle').textContent = text;
+}
+
+function clamp(v) { return Math.max(0, Math.min(100, v)); }
+
+function updateBars() {
+  document.getElementById('bar-faim').style.width = stats.faim + '%';
+  document.getElementById('bar-bonheur').style.width = stats.bonheur + '%';
+  document.getElementById('bar-savoir').style.width = stats.savoir + '%';
+  document.getElementById('bar-royaume').style.width = royaume + '%';
+
+  const moodEl = document.getElementById('mood');
+  const avg = (stats.faim + stats.bonheur + stats.savoir) / 3;
+  moodEl.textContent = avg > 60 ? '😊' : avg > 30 ? '😐' : '😢';
+
+  checkCoronation();
+}
+
+function bump(stat, amount) {
+  stats[stat] = clamp(stats[stat] + amount);
+  royaume = clamp(Math.round((stats.faim + stats.bonheur + stats.savoir) / 3 * 0.9));
+  updateBars();
+}
+
+function moveCharacter() {
+  position = position === 40 ? 340 : 40;
+  document.getElementById('character').style.left = position + 'px';
+}
+
+const quizBank = [
+  { q: "Quel roi a fait construire le château de Versailles ?", options: ["Louis XIV", "Louis IX", "Charlemagne"], correct: 0 },
+  { q: "En quelle année a eu lieu le sacre de Charlemagne ?", options: ["800", "1515", "1066"], correct: 0 },
+  { q: "Qui était surnommé \"le Roi Soleil\" ?", options: ["Louis XVI", "Louis XIV", "Henri IV"], correct: 1 },
+  { q: "Quel roi a promulgué l'édit de Nantes ?", options: ["Henri IV", "François Ier", "Philippe le Bel"], correct: 0 },
+  { q: "Quelle bataille a marqué la victoire française sur les Anglais en 1515 ?", options: ["Marignan", "Azincourt", "Hastings"], correct: 0 },
+  { q: "Qui était le premier roi de la dynastie capétienne ?", options: ["Hugues Capet", "Clovis", "Charles VII"], correct: 0 },
+  { q: "Quel roi a été guidé par Jeanne d'Arc ?", options: ["Charles VII", "Louis XI", "Philippe Auguste"], correct: 0 },
+  { q: "Sous quel roi la Bastille a-t-elle été prise, en 1789 ?", options: ["Louis XVI", "Louis XV", "Louis XIV"], correct: 0 },
+];
+let usedQuestions = [];
+let pendingCorrect = false;
+
+function pickQuestion() {
+  if (usedQuestions.length >= quizBank.length) usedQuestions = [];
+  let idx;
+  do { idx = Math.floor(Math.random() * quizBank.length); } while (usedQuestions.includes(idx));
+  usedQuestions.push(idx);
+  return quizBank[idx];
+}
+
+function teach() {
+  const question = pickQuestion();
+  const overlay = document.getElementById('quizOverlay');
+  const qEl = document.getElementById('quizQuestion');
+  const optsEl = document.getElementById('quizOptions');
+  const feedbackEl = document.getElementById('quizFeedback');
+  const continueBtn = document.getElementById('quizContinue');
+
+  qEl.textContent = question.q;
+  optsEl.innerHTML = '';
+  feedbackEl.textContent = '';
+  continueBtn.classList.remove('visible');
+
+  question.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = opt;
+    btn.onclick = () => answerQuiz(i, question.correct, btn, optsEl);
+    optsEl.appendChild(btn);
+  });
+
+  overlay.classList.add('open');
+}
+
+function answerQuiz(chosen, correct, btnEl, optsEl) {
+  const feedbackEl = document.getElementById('quizFeedback');
+  const continueBtn = document.getElementById('quizContinue');
+  Array.from(optsEl.children).forEach(b => b.onclick = null);
+
+  if (chosen === correct) {
+    btnEl.classList.add('correct');
+    feedbackEl.textContent = "Bien répondu ! Le dauphin retient sa leçon.";
+    pendingCorrect = true;
+  } else {
+    btnEl.classList.add('wrong');
+    optsEl.children[correct].classList.add('correct');
+    feedbackEl.textContent = "Pas tout à fait... mais il progresse un peu quand même.";
+    pendingCorrect = false;
+  }
+  continueBtn.classList.add('visible');
+}
+
+function closeQuiz() {
+  document.getElementById('quizOverlay').classList.remove('open');
+  bump('savoir', pendingCorrect ? 25 : 8);
+  randomLine('teach');
+}
+
+function feed() { bump('faim', 20); moveCharacter(); randomLine('feed'); }
+function play() { bump('bonheur', 20); moveCharacter(); randomLine('play'); }
+function rest() { bump('bonheur', 8); bump('faim', 5); randomLine('rest'); }
+
+function randomLine(key) {
+  const options = chronicleMessages[key];
+  setChronicle(options[Math.floor(Math.random() * options.length)]);
+}
+
+function checkCoronation() {
+  if (royaume >= 100 && !isKing) {
+    isKing = true;
+    document.getElementById('robe').classList.add('royal');
+    document.getElementById('crown').classList.add('visible');
+    setChronicle(chronicleMessages.crowned);
+  }
+}
+
+// Décroissance naturelle des jauges dans le temps, comme un vrai tamagotchi
+setInterval(() => {
+  stats.faim = clamp(stats.faim - 3);
+  stats.bonheur = clamp(stats.bonheur - 2);
+  stats.savoir = clamp(stats.savoir - 1);
+  if (stats.faim < 20 || stats.bonheur < 20) {
+    setChronicle(chronicleMessages.low);
+  }
+  updateBars();
+}, 4000);
+
+updateBars();
+</script>
+
+</body>
+</html>
