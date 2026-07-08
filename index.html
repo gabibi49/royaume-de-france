@@ -403,7 +403,7 @@ function updateBars() {
 
 function bump(stat, amount) {
   stats[stat] = clamp(stats[stat] + amount);
-  royaume = clamp(Math.round((stats.faim + stats.bonheur + stats.savoir) / 3 * 0.9));
+  royaume = clamp(Math.round((stats.faim + stats.bonheur + stats.savoir) / 3 ));
   updateBars();
 }
 
