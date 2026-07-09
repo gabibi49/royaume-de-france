@@ -30,6 +30,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
+    transition: background 1.8s ease;
   }
 
   .game {
@@ -55,6 +56,16 @@
     font-size: 0.95rem;
   }
 
+  .dynasty-counter {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--gold-light);
+    margin: -14px 0 16px;
+    opacity: 0.9;
+  }
+
   .courtyard {
     position: relative;
     height: 220px;
@@ -74,22 +85,69 @@
     background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 40px);
   }
 
-  .flag {
+  /* Drapeau du royaume, réagit à l'état du royaume */
+  .flagpole {
     position: absolute;
     top: 10px;
-    font-size: 1.3rem;
-    opacity: 0.85;
+    right: 24px;
+    width: 3px;
+    height: 58px;
+    background: #3a2e22;
+    z-index: 2;
   }
-  .flag.left { left: 16px; }
-  .flag.right { right: 16px; }
+
+  .flag-banner {
+    position: absolute;
+    top: 10px;
+    right: 24px;
+    width: 46px;
+    height: 32px;
+    transform-origin: left center;
+    animation: wave 2.2s ease-in-out infinite;
+    transition: filter 0.8s ease, opacity 0.8s ease;
+    z-index: 2;
+    filter: none;
+  }
+  .flag-banner svg { width: 100%; height: 100%; display: block; }
+
+  .flag-banner.crisis {
+    filter: grayscale(0.85) brightness(0.55);
+    opacity: 0.8;
+    animation-duration: 3.2s;
+  }
+  .flag-banner.glorious {
+    filter: drop-shadow(0 0 6px var(--gold-light));
+  }
+
+  .flag-era { display: none; }
+  .flag-banner.era-0 .flag-era-0,
+  .flag-banner.era-1 .flag-era-1,
+  .flag-banner.era-2 .flag-era-2,
+  .flag-banner.era-3 .flag-era-3,
+  .flag-banner.era-4 .flag-era-4 { display: block; }
+
+  @keyframes wave {
+    0%, 100% { transform: skewY(0deg) rotate(0deg); }
+    50% { transform: skewY(5deg) rotate(-1deg); }
+  }
+
+  .era-icon {
+    position: absolute;
+    top: 10px;
+    left: 16px;
+    font-size: 1.3rem;
+    opacity: 0.9;
+    z-index: 2;
+    transition: opacity 0.4s;
+  }
 
   .character {
     position: absolute;
-    bottom: 40px;
+    bottom: 30px;
     left: 40px;
     width: 60px;
-    height: 80px;
-    transition: left 2.2s ease-in-out;
+    height: 90px;
+    transition: left 2.2s ease-in-out, transform 0.8s ease;
     animation: bob 1.4s ease-in-out infinite;
   }
 
@@ -98,31 +156,22 @@
     50% { transform: translateY(-4px); }
   }
 
-  .robe {
-    position: absolute;
-    bottom: 0;
-    left: 10px;
-    width: 40px;
-    height: 45px;
-    background: var(--burgundy);
-    border-radius: 6px 6px 16px 16px;
-    transition: background 0.6s;
-  }
-  .robe.royal { background: var(--royal-blue); box-shadow: 0 0 0 2px var(--gold); }
+  .dauphin-svg { width: 100%; height: 100%; overflow: visible; display: block; }
 
-  .head {
-    position: absolute;
-    bottom: 40px;
-    left: 15px;
-    width: 30px;
-    height: 30px;
-    background: #e8c39e;
-    border-radius: 50%;
+  .body-group, .headwear-group { display: none; }
+  .character.era-0 .body-0, .character.era-0 .headwear-0 { display: block; }
+  .character.era-1 .body-1, .character.era-1 .headwear-1 { display: block; }
+  .character.era-2 .body-2, .character.era-2 .headwear-2 { display: block; }
+  .character.era-3 .body-3, .character.era-3 .headwear-3 { display: block; }
+  .character.era-4 .body-4, .character.era-4 .headwear-4 { display: block; }
+
+  .character.is-king .body-group {
+    filter: drop-shadow(0 0 5px var(--gold-light));
   }
 
   .crown {
     position: absolute;
-    bottom: 62px;
+    top: -6px;
     left: 15px;
     width: 30px;
     height: 12px;
@@ -131,6 +180,7 @@
     font-size: 18px;
     text-align: center;
     line-height: 1;
+    z-index: 3;
   }
   .crown.visible { opacity: 1; }
 
@@ -140,6 +190,7 @@
     left: 8px;
     font-size: 1.1rem;
     transition: opacity 0.3s;
+    z-index: 3;
   }
 
   .stats {
@@ -212,6 +263,7 @@
     box-shadow: 0 0 0 var(--burgundy), 0 2px 4px rgba(0,0,0,0.3);
   }
   .seal-btn .icon { font-size: 1.3rem; margin-bottom: 2px; }
+  .seal-btn:disabled { opacity: 0.5; cursor: default; }
 
   .chronicle {
     background: var(--parchment);
@@ -223,6 +275,11 @@
     min-height: 44px;
     border: 1px solid var(--gold);
     text-align: center;
+    transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  .chronicle.event-flash {
+    border-color: var(--burgundy);
+    box-shadow: 0 0 0 3px var(--gold-light);
   }
 
   .modal-overlay {
@@ -237,7 +294,7 @@
   }
   .modal-overlay.open { display: flex; }
 
-  .quiz-box {
+  .quiz-box, .end-box {
     background: var(--parchment);
     color: var(--ink);
     border: 3px solid var(--gold);
@@ -246,6 +303,7 @@
     max-width: 380px;
     width: 100%;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
   }
 
   .quiz-eyebrow {
@@ -309,22 +367,134 @@
     display: none;
   }
   .quiz-continue.visible { display: block; }
+
+  .end-box.victory { border-color: var(--gold); background: linear-gradient(160deg, var(--parchment), var(--gold-light)); }
+  .end-box.defeat { border-color: var(--burgundy); background: linear-gradient(160deg, var(--parchment), #e0c9c9); }
+
+  .end-emoji { font-size: 2.4rem; margin: 0 0 8px; }
+  .end-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    margin: 0 0 10px;
+    color: var(--burgundy);
+  }
+  .end-box.victory .end-title { color: var(--royal-blue); }
+  .end-message { font-size: 0.95rem; margin: 0 0 6px; }
 </style>
 </head>
-<body>
+<body id="pageBody">
 
 <div class="game">
   <h1>Le Petit Dauphin</h1>
   <p class="subtitle">Élevez-le bien, il deviendra Roi de France</p>
+  <p class="dynasty-counter" id="dynastyCounter">Génération 1 / 5</p>
 
   <div class="courtyard">
-    <span class="flag left">⚜️</span>
-    <span class="flag right">⚜️</span>
+    <span class="era-icon" id="eraIcon">🔥</span>
+    <div class="flagpole"></div>
+    <div class="flag-banner" id="flagBanner">
+      <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+        <g class="flag-era flag-era-0"> <!-- Clovis : bannière simple à la croix -->
+          <rect width="60" height="40" fill="#e2d3ab"/>
+          <line x1="30" y1="4" x2="30" y2="36" stroke="#6b2737" stroke-width="4"/>
+          <line x1="10" y1="20" x2="50" y2="20" stroke="#6b2737" stroke-width="4"/>
+        </g>
+        <g class="flag-era flag-era-1"> <!-- Charlemagne : aigle impériale -->
+          <rect width="60" height="40" fill="#c9a227"/>
+          <path d="M30,14 L14,9 L18,18 L30,18 Z" fill="#241c14"/>
+          <path d="M30,14 L46,9 L42,18 L30,18 Z" fill="#241c14"/>
+          <path d="M30,9 L26,20 L29,20 L29,33 L31,33 L31,20 L34,20 Z" fill="#241c14"/>
+        </g>
+        <g class="flag-era flag-era-2"> <!-- Hugues Capet : fleurs de lys sur bleu -->
+          <rect width="60" height="40" fill="#1b2a4a"/>
+          <text x="6" y="17" font-size="13">⚜️</text>
+          <text x="30" y="17" font-size="13">⚜️</text>
+          <text x="6" y="35" font-size="13">⚜️</text>
+          <text x="30" y="35" font-size="13">⚜️</text>
+        </g>
+        <g class="flag-era flag-era-3"> <!-- Saint Louis : l'Oriflamme -->
+          <path d="M0,4 L45,4 L60,12 L45,20 L60,28 L45,36 L0,36 Z" fill="#8a2030"/>
+        </g>
+        <g class="flag-era flag-era-4"> <!-- Louis XIV : étendard royal blanc fleurdelysé -->
+          <rect width="60" height="40" fill="#f1e6cd"/>
+          <text x="4" y="14" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="24" y="14" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="44" y="14" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="14" y="26" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="34" y="26" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="4" y="38" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="24" y="38" font-size="9" fill="#c9a227">⚜️</text>
+          <text x="44" y="38" font-size="9" fill="#c9a227">⚜️</text>
+        </g>
+      </svg>
+    </div>
     <div class="character" id="character">
       <div class="mood" id="mood">😊</div>
       <div class="crown" id="crown">👑</div>
-      <div class="head"></div>
-      <div class="robe" id="robe"></div>
+      <svg class="dauphin-svg" viewBox="0 0 60 90" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- CORPS : un groupe par époque, un seul visible à la fois -->
+        <g class="body-group body-0"> <!-- Clovis, tunique et cape mérovingiennes -->
+          <path d="M14,50 Q14,88 18,88 L42,88 Q46,88 46,50 Q46,40 30,40 Q14,40 14,50 Z" fill="#7a4a2e"/>
+          <path d="M10,46 Q30,36 50,46 L50,64 Q30,54 10,64 Z" fill="#5a3620" opacity="0.85"/>
+          <circle cx="30" cy="47" r="2.3" fill="#c9a227"/>
+        </g>
+        <g class="body-group body-1"> <!-- Charlemagne, tunique et cape carolingiennes -->
+          <path d="M13,50 Q13,88 18,88 L42,88 Q47,88 47,50 Q47,39 30,39 Q13,39 13,50 Z" fill="#5d3a6b"/>
+          <path d="M9,45 Q30,33 51,45 L51,63 Q30,52 9,63 Z" fill="#3d2850" opacity="0.9"/>
+          <circle cx="30" cy="46" r="2.6" fill="#c9a227"/>
+        </g>
+        <g class="body-group body-2"> <!-- Hugues Capet, bliaud et manteau capétiens -->
+          <path d="M13,50 Q13,88 18,88 L42,88 Q47,88 47,50 Q47,39 30,39 Q13,39 13,50 Z" fill="#2f4a7a"/>
+          <path d="M10,44 L50,44 L48,66 L12,66 Z" fill="#20345a" opacity="0.7"/>
+          <circle cx="30" cy="45" r="2.4" fill="#c9a227"/>
+        </g>
+        <g class="body-group body-3"> <!-- Saint Louis, robe fleurdelysée gothique -->
+          <path d="M11,50 Q11,88 17,88 L43,88 Q49,88 49,50 Q49,37 30,37 Q11,37 11,50 Z" fill="#1f3a6b"/>
+          <text x="18" y="63" font-size="7" fill="#e8cf7a">⚜</text>
+          <text x="33" y="70" font-size="7" fill="#e8cf7a">⚜</text>
+          <text x="24" y="78" font-size="7" fill="#e8cf7a">⚜</text>
+        </g>
+        <g class="body-group body-4"> <!-- Louis XIV, habit et manteau d'hermine de Versailles -->
+          <path d="M10,50 Q10,88 17,88 L43,88 Q50,88 50,50 Q50,36 30,36 Q10,36 10,50 Z" fill="#16234a"/>
+          <path d="M10,50 Q30,58 50,50" stroke="#c9a227" stroke-width="2" fill="none"/>
+          <path d="M14,40 Q30,48 46,40 L46,46 Q30,54 14,46 Z" fill="#f1e6cd"/>
+          <circle cx="20" cy="43" r="1" fill="#241c14"/>
+          <circle cx="30" cy="46" r="1" fill="#241c14"/>
+          <circle cx="40" cy="43" r="1" fill="#241c14"/>
+        </g>
+
+        <!-- TÊTE, partagée par toutes les époques -->
+        <circle cx="30" cy="28" r="13" fill="#e8c39e"/>
+        <circle cx="26" cy="27" r="1.3" fill="#241c14"/>
+        <circle cx="34" cy="27" r="1.3" fill="#241c14"/>
+        <path d="M25,33 Q30,36 35,33" stroke="#241c14" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+        <!-- COIFFE / CHEVELURE : un groupe par époque, dessiné après la tête -->
+        <g class="headwear-group headwear-0"> <!-- Clovis, cheveux longs des "rois chevelus" -->
+          <path d="M17,18 Q13,34 17,46" stroke="#4a3018" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+          <path d="M43,18 Q47,34 43,46" stroke="#4a3018" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <g class="headwear-group headwear-1"> <!-- Charlemagne : barbe fleurie et couronne impériale arquée -->
+          <path d="M20,32 Q30,42 40,32 Q38,38 30,40 Q22,38 20,32 Z" fill="#d8d0c0"/>
+          <path d="M18,17 Q30,10 42,17 Q42,21 38,23 L22,23 Q18,21 18,17 Z" fill="#b8b0a0"/>
+          <path d="M17,17 L17,11 L21,15 L25,9 L30,14 L35,9 L39,15 L43,11 L43,17 Z" fill="#c9a227"/>
+          <line x1="30" y1="9" x2="30" y2="4" stroke="#c9a227" stroke-width="1.5"/>
+          <line x1="27" y1="6" x2="33" y2="6" stroke="#c9a227" stroke-width="1.5"/>
+        </g>
+        <g class="headwear-group headwear-2"> <!-- Hugues Capet, circlet doré simple -->
+          <path d="M18,16 Q30,9 42,16 Q42,23 36,25 L24,25 Q18,23 18,16 Z" fill="#3a2a18"/>
+          <ellipse cx="30" cy="16" rx="13" ry="2.6" fill="none" stroke="#c9a227" stroke-width="2"/>
+        </g>
+        <g class="headwear-group headwear-3"> <!-- Saint Louis, chaperon gothique -->
+          <path d="M16,20 Q30,6 44,20 Q44,28 38,30 L22,30 Q16,28 16,20 Z" fill="#16264a"/>
+        </g>
+        <g class="headwear-group headwear-4"> <!-- Louis XIV, grande perruque -->
+          <path d="M8,15 Q4,30 10,42 Q14,38 14,26 Q14,18 8,15 Z" fill="#d8cdb0"/>
+          <path d="M52,15 Q56,30 50,42 Q46,38 46,26 Q46,18 52,15 Z" fill="#d8cdb0"/>
+          <path d="M16,12 Q30,4 44,12 Q42,18 30,16 Q18,18 16,12 Z" fill="#d8cdb0"/>
+        </g>
+      </svg>
     </div>
   </div>
 
@@ -343,15 +513,15 @@
     </div>
     <div class="stat-row royaume-row">
       <div class="stat-label">⚜️ Royaume</div>
-      <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-royaume" style="width:0%"></div></div>
+      <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-royaume" style="width:10%"></div></div>
     </div>
   </div>
 
   <div class="actions">
-    <button class="seal-btn" onclick="feed()"><span class="icon">🍞</span>Nourrir</button>
-    <button class="seal-btn" onclick="play()"><span class="icon">🎭</span>Jouer</button>
-    <button class="seal-btn" onclick="teach()"><span class="icon">📜</span>Instruire</button>
-    <button class="seal-btn" onclick="rest()"><span class="icon">🛏️</span>Coucher</button>
+    <button class="seal-btn" id="btn-feed" onclick="startQuiz('feed')"><span class="icon">🍞</span>Nourrir</button>
+    <button class="seal-btn" id="btn-play" onclick="startQuiz('play')"><span class="icon">🎭</span>Jouer</button>
+    <button class="seal-btn" id="btn-teach" onclick="startQuiz('teach')"><span class="icon">📜</span>Instruire</button>
+    <button class="seal-btn" id="btn-rest" onclick="rest()"><span class="icon">🛏️</span>Coucher</button>
   </div>
 
   <div class="chronicle" id="chronicle">Bienvenue à la cour. Le petit dauphin vous observe.</div>
@@ -359,7 +529,7 @@
 
 <div class="modal-overlay" id="quizOverlay">
   <div class="quiz-box">
-    <p class="quiz-eyebrow">Leçon du précepteur</p>
+    <p class="quiz-eyebrow" id="quizEyebrow">Leçon du précepteur</p>
     <p class="quiz-question" id="quizQuestion"></p>
     <div class="quiz-options" id="quizOptions"></div>
     <p class="quiz-feedback" id="quizFeedback"></p>
@@ -367,26 +537,169 @@
   </div>
 </div>
 
-<script>
-let stats = { faim: 70, bonheur: 70, savoir: 20 };
-let royaume = 0;
-let isKing = false;
-let position = 40;
+<div class="modal-overlay" id="endOverlay">
+  <div class="end-box" id="endBox">
+    <p class="end-emoji" id="endEmoji"></p>
+    <h2 class="end-title" id="endTitle"></h2>
+    <p class="end-message" id="endMessage"></p>
+    <button class="quiz-continue visible" id="endActionBtn"></button>
+  </div>
+</div>
 
-const chronicleMessages = {
-  feed: ["Le dauphin dévore une belle miche de pain.", "\"Encore !\" réclame-t-il joyeusement."],
-  play: ["Vous jouez aux quilles dans la cour.", "Le dauphin rit aux éclats."],
-  teach: ["Le précepteur lui enseigne le latin.", "Le dauphin fronce les sourcils, concentré."],
-  rest: ["Le dauphin fait la sieste sous un dais.", "Il se repose, bercé par les ménestrels."],
-  crowned: "Le royaume est en paix. Le dauphin est couronné Roi de France !",
-  low: "Le dauphin semble contrarié. Occupez-vous de lui.",
+<script>
+// --- Constantes de configuration : tout ce qui est "réglable" est ici ---
+const GAME = {
+  DECAY_INTERVAL_MS: 4000,        // rythme de la routine du dauphin
+  EVENT_CHANCE: 0.22,             // probabilité d'un événement aléatoire à chaque cycle
+  DIFFICULTY_STEP: 0.2,           // +20% de décroissance par génération
+  CORONATION_DELAY_MS: 1700,      // pause avant l'écran de couronnement, pour laisser voir l'effet
+  START_FAIM: 70,
+  START_BONHEUR: 70,
+  START_SAVOIR: 20,
+  START_ROYAUME: 10,
+  PROSPERITY_THRESHOLD: 80,       // au-delà de cette valeur, une jauge est jugée "florissante"
+  PROSPERITY_ROYAUME_BONUS: 1,    // gain de Royaume par jauge florissante à chaque cycle
+  MAX_GENERATIONS: 5,
 };
+
+const ORIGINAL_BG = 'radial-gradient(ellipse at top, #1b2a4a 0%, #101b32 70%)';
+
+let stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
+let royaume = GAME.START_ROYAUME;
+let isKing = false;
+let gameOver = false;
+let position = 40;
+let decayTimer = null;
+let generation = 1;
+const MAX_GENERATIONS = GAME.MAX_GENERATIONS;
+const dynastyEras = [
+  { name: "Clovis Ier", era: "Royaume Mérovingien, Vème siècle", icon: "🔥",
+    sky: "#3a2f1f", skyEnd: "#5a4530", ground: "#2e2013", groundEnd: "#4a341f" },
+  { name: "Charlemagne", era: "Empire Carolingien, VIIIème siècle", icon: "🦅",
+    sky: "#33324a", skyEnd: "#4d4a6e", ground: "#3a2e22", groundEnd: "#55432f" },
+  { name: "Hugues Capet", era: "Royaume Capétien, Xème siècle", icon: "🏰",
+    sky: "#2d3f66", skyEnd: "#24365a", ground: "#3a2e22", groundEnd: "#4a3a28" },
+  { name: "Saint Louis (Louis IX)", era: "France Gothique, XIIIème siècle", icon: "⛪",
+    sky: "#1f3a5c", skyEnd: "#2a4a78", ground: "#332a1a", groundEnd: "#4d3f22" },
+  { name: "Louis XIV, le Roi-Soleil", era: "Versailles, XVIIème siècle", icon: "⛲",
+    sky: "#4a3f1f", skyEnd: "#8a6f2a", ground: "#5a4a1f", groundEnd: "#c9a227" },
+];
+
+// Événements aléatoires rares, en plus de la routine des 4 actions
+const randomEvents = [
+  { stat: 'bonheur', amount: -15, extra: { stat: 'royaume', amount: -8 },
+    line: "☠️ La peste frappe le royaume. Le peuple est terrifié et la cour s'inquiète." },
+  { stat: 'faim', amount: -20,
+    line: "🌾 Une disette frappe les campagnes. Les récoltes ont manqué." },
+  { stat: 'royaume', amount: 10, extra: { stat: 'savoir', amount: 5 },
+    line: "📯 Un ambassadeur étranger apporte des présents et de nouvelles idées à la cour." },
+  { stat: 'faim', amount: 15,
+    line: "🌻 Une récolte exceptionnelle remplit les greniers du royaume." },
+  { stat: 'royaume', amount: -10,
+    line: "🗡️ Un complot se trame parmi les nobles. La couronne vacille." },
+];
+
+function applyEventEffect(key, amount) {
+  if (key === 'royaume') royaume = clamp(royaume + amount);
+  else stats[key] = clamp(stats[key] + amount);
+}
+
+function flashChronicle() {
+  const el = document.getElementById('chronicle');
+  el.classList.add('event-flash');
+  setTimeout(() => el.classList.remove('event-flash'), 1300);
+}
+
+function maybeTriggerEvent() {
+  if (Math.random() > GAME.EVENT_CHANCE) return false;
+  const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+  applyEventEffect(event.stat, event.amount);
+  if (event.extra) applyEventEffect(event.extra.stat, event.extra.amount);
+  setChronicle(event.line);
+  flashChronicle();
+  return true;
+}
+
+// --- Banques de questions, une par action ---
+const feedBank = [
+  { q: "Quel légume était absent des tables royales médiévales (arrivé bien plus tard en France) ?", options: ["La pomme de terre", "Le chou", "La fève"], correct: 0 },
+  { q: "Quel plat est typique d'un banquet royal médiéval ?", options: ["Une tourte de gibier", "Une pizza", "Un hamburger"], correct: 0 },
+  { q: "Quelle boisson était couramment servie à table, plus que l'eau jugée impure ?", options: ["Le vin coupé d'eau", "Le soda", "Le café glacé"], correct: 0 },
+  { q: "Quel épice, très chère, symbolisait le prestige d'un banquet royal ?", options: ["Le poivre", "Le paprika", "Le piment"], correct: 0 },
+  { q: "Le sucre, au Moyen Âge, était surtout utilisé comme...", options: ["Un remède de pharmacien, très rare", "Un ingrédient banal et bon marché", "Un colorant textile"], correct: 0 },
+];
+
+const playBank = [
+  { q: "Quel loisir était réservé à la noblesse pour chasser le gibier à plumes ?", options: ["La chasse au faucon", "Le flipper", "Le jeu vidéo"], correct: 0 },
+  { q: "Quel jeu, ancêtre du tennis, se pratiquait déjà à la cour ?", options: ["Le jeu de paume", "Le bowling", "Le ping-pong"], correct: 0 },
+  { q: "Quel divertissement mettait en scène des chevaliers en armure s'affrontant à cheval ?", options: ["Le tournoi de joute", "Le rallye automobile", "Le tir à l'arc laser"], correct: 0 },
+  { q: "Quel jeu de plateau, venu de Perse via les croisades, était très prisé des seigneurs ?", options: ["Les échecs", "Le Monopoly", "Le Uno"], correct: 0 },
+  { q: "Les bals à la cour se dansaient principalement au son de...", options: ["Luths et violes", "Guitares électriques", "Synthétiseurs"], correct: 0 },
+];
+
+const teachBank = [
+  { q: "Quel roi a fait construire le château de Versailles ?", options: ["Louis XIV", "Louis IX", "Charlemagne"], correct: 0 },
+  { q: "En quelle année a eu lieu le sacre de Charlemagne ?", options: ["800", "1515", "1066"], correct: 0 },
+  { q: "Qui était surnommé \"le Roi Soleil\" ?", options: ["Louis XVI", "Louis XIV", "Henri IV"], correct: 1 },
+  { q: "Quel roi a promulgué l'édit de Nantes ?", options: ["Henri IV", "François Ier", "Philippe le Bel"], correct: 0 },
+  { q: "Quelle bataille a marqué la victoire française sur les Anglais en 1515 ?", options: ["Marignan", "Azincourt", "Hastings"], correct: 0 },
+  { q: "Qui était le premier roi de la dynastie capétienne ?", options: ["Hugues Capet", "Clovis", "Charles VII"], correct: 0 },
+  { q: "Quel roi a été guidé par Jeanne d'Arc ?", options: ["Charles VII", "Louis XI", "Philippe Auguste"], correct: 0 },
+  { q: "Sous quel roi la Bastille a-t-elle été prise, en 1789 ?", options: ["Louis XVI", "Louis XV", "Louis XIV"], correct: 0 },
+];
+
+// --- Config par action : quelle jauge, quels gains, quels textes ---
+const actionConfig = {
+  feed: {
+    eyebrow: "Le repas royal", bank: feedBank, stat: 'faim',
+    successGain: 20, failGain: 8, royaumeSuccess: 5, royaumeFail: 1,
+    correctLine: "Le dauphin savoure un repas digne de son rang.",
+    wrongLine: "Le repas n'était pas tout à fait d'époque... mais il a mangé.",
+    move: true,
+  },
+  play: {
+    eyebrow: "Le temps du loisir", bank: playBank, stat: 'bonheur',
+    successGain: 20, failGain: 8, royaumeSuccess: 5, royaumeFail: 1,
+    correctLine: "Le dauphin s'est diverti comme il se doit à la cour.",
+    wrongLine: "Le jeu choisi n'existait pas encore... mais il s'est amusé quand même.",
+    move: true,
+  },
+  teach: {
+    eyebrow: "Leçon du précepteur", bank: teachBank, stat: 'savoir',
+    successGain: 25, failGain: 8, royaumeSuccess: 6, royaumeFail: 1,
+    correctLine: "Bien répondu ! Le dauphin retient sa leçon.",
+    wrongLine: "Pas tout à fait... mais il progresse un peu quand même.",
+    move: false,
+  },
+};
+
+const usedQuestions = { feed: [], play: [], teach: [] };
+let currentAction = null;
+let pendingCorrect = false;
+
+function clamp(v) { return Math.max(0, Math.min(100, v)); }
 
 function setChronicle(text) {
   document.getElementById('chronicle').textContent = text;
 }
 
-function clamp(v) { return Math.max(0, Math.min(100, v)); }
+function setButtonsDisabled(disabled) {
+  ['btn-feed', 'btn-play', 'btn-teach', 'btn-rest'].forEach(id => {
+    document.getElementById(id).disabled = disabled;
+  });
+}
+
+function moveCharacter() {
+  position = position === 40 ? 340 : 40;
+  document.getElementById('character').style.left = position + 'px';
+}
+
+function updateFlag() {
+  const flag = document.getElementById('flagBanner');
+  flag.classList.remove('crisis', 'glorious');
+  if (royaume < 30) flag.classList.add('crisis');
+  else if (royaume > 70) flag.classList.add('glorious');
+}
 
 function updateBars() {
   document.getElementById('bar-faim').style.width = stats.faim + '%';
@@ -398,44 +711,27 @@ function updateBars() {
   const avg = (stats.faim + stats.bonheur + stats.savoir) / 3;
   moodEl.textContent = avg > 60 ? '😊' : avg > 30 ? '😐' : '😢';
 
-  checkCoronation();
+  updateFlag();
+  checkEndStates();
 }
 
-function bump(stat, amount) {
-  stats[stat] = clamp(stats[stat] + amount);
-  royaume = clamp(Math.round((stats.faim + stats.bonheur + stats.savoir) / 3 ));
-  updateBars();
-}
-
-function moveCharacter() {
-  position = position === 40 ? 340 : 40;
-  document.getElementById('character').style.left = position + 'px';
-}
-
-const quizBank = [
-  { q: "Quel roi a fait construire le château de Versailles ?", options: ["Louis XIV", "Louis IX", "Charlemagne"], correct: 0 },
-  { q: "En quelle année a eu lieu le sacre de Charlemagne ?", options: ["800", "1515", "1066"], correct: 0 },
-  { q: "Qui était surnommé \"le Roi Soleil\" ?", options: ["Louis XVI", "Louis XIV", "Henri IV"], correct: 1 },
-  { q: "Quel roi a promulgué l'édit de Nantes ?", options: ["Henri IV", "François Ier", "Philippe le Bel"], correct: 0 },
-  { q: "Quelle bataille a marqué la victoire française sur les Anglais en 1515 ?", options: ["Marignan", "Azincourt", "Hastings"], correct: 0 },
-  { q: "Qui était le premier roi de la dynastie capétienne ?", options: ["Hugues Capet", "Clovis", "Charles VII"], correct: 0 },
-  { q: "Quel roi a été guidé par Jeanne d'Arc ?", options: ["Charles VII", "Louis XI", "Philippe Auguste"], correct: 0 },
-  { q: "Sous quel roi la Bastille a-t-elle été prise, en 1789 ?", options: ["Louis XVI", "Louis XV", "Louis XIV"], correct: 0 },
-];
-let usedQuestions = [];
-let pendingCorrect = false;
-
-function pickQuestion() {
-  if (usedQuestions.length >= quizBank.length) usedQuestions = [];
+// --- Quiz générique, partagé par nourrir / jouer / instruire ---
+function pickQuestion(type) {
+  const bank = actionConfig[type].bank;
+  if (usedQuestions[type].length >= bank.length) usedQuestions[type] = [];
   let idx;
-  do { idx = Math.floor(Math.random() * quizBank.length); } while (usedQuestions.includes(idx));
-  usedQuestions.push(idx);
-  return quizBank[idx];
+  do { idx = Math.floor(Math.random() * bank.length); } while (usedQuestions[type].includes(idx));
+  usedQuestions[type].push(idx);
+  return bank[idx];
 }
 
-function teach() {
-  const question = pickQuestion();
-  const overlay = document.getElementById('quizOverlay');
+function startQuiz(type) {
+  if (gameOver) return;
+  currentAction = type;
+  const cfg = actionConfig[type];
+  const question = pickQuestion(type);
+
+  document.getElementById('quizEyebrow').textContent = cfg.eyebrow;
   const qEl = document.getElementById('quizQuestion');
   const optsEl = document.getElementById('quizOptions');
   const feedbackEl = document.getElementById('quizFeedback');
@@ -454,7 +750,7 @@ function teach() {
     optsEl.appendChild(btn);
   });
 
-  overlay.classList.add('open');
+  document.getElementById('quizOverlay').classList.add('open');
 }
 
 function answerQuiz(chosen, correct, btnEl, optsEl) {
@@ -462,14 +758,15 @@ function answerQuiz(chosen, correct, btnEl, optsEl) {
   const continueBtn = document.getElementById('quizContinue');
   Array.from(optsEl.children).forEach(b => b.onclick = null);
 
+  const cfg = actionConfig[currentAction];
   if (chosen === correct) {
     btnEl.classList.add('correct');
-    feedbackEl.textContent = "Bien répondu ! Le dauphin retient sa leçon.";
+    feedbackEl.textContent = cfg.correctLine;
     pendingCorrect = true;
   } else {
     btnEl.classList.add('wrong');
     optsEl.children[correct].classList.add('correct');
-    feedbackEl.textContent = "Pas tout à fait... mais il progresse un peu quand même.";
+    feedbackEl.textContent = cfg.wrongLine;
     pendingCorrect = false;
   }
   continueBtn.classList.add('visible');
@@ -477,40 +774,209 @@ function answerQuiz(chosen, correct, btnEl, optsEl) {
 
 function closeQuiz() {
   document.getElementById('quizOverlay').classList.remove('open');
-  bump('savoir', pendingCorrect ? 25 : 8);
-  randomLine('teach');
-}
+  const cfg = actionConfig[currentAction];
 
-function feed() { bump('faim', 20); moveCharacter(); randomLine('feed'); }
-function play() { bump('bonheur', 20); moveCharacter(); randomLine('play'); }
-function rest() { bump('bonheur', 8); bump('faim', 5); randomLine('rest'); }
+  stats[cfg.stat] = clamp(stats[cfg.stat] + (pendingCorrect ? cfg.successGain : cfg.failGain));
+  royaume = clamp(royaume + (pendingCorrect ? cfg.royaumeSuccess : cfg.royaumeFail));
 
-function randomLine(key) {
-  const options = chronicleMessages[key];
-  setChronicle(options[Math.floor(Math.random() * options.length)]);
-}
-
-function checkCoronation() {
-  if (royaume >= 100 && !isKing) {
-    isKing = true;
-    document.getElementById('robe').classList.add('royal');
-    document.getElementById('crown').classList.add('visible');
-    setChronicle(chronicleMessages.crowned);
-  }
-}
-
-// Décroissance naturelle des jauges dans le temps, comme un vrai tamagotchi
-setInterval(() => {
-  stats.faim = clamp(stats.faim - 3);
-  stats.bonheur = clamp(stats.bonheur - 2);
-  stats.savoir = clamp(stats.savoir - 1);
-  if (stats.faim < 20 || stats.bonheur < 20) {
-    setChronicle(chronicleMessages.low);
-  }
+  if (cfg.move) moveCharacter();
   updateBars();
-}, 4000);
+}
 
+function rest() {
+  if (gameOver) return;
+  stats.bonheur = clamp(stats.bonheur + 8);
+  stats.faim = clamp(stats.faim + 5);
+  royaume = clamp(royaume + 2);
+  setChronicle("Le dauphin fait la sieste sous un dais. Il se repose, bercé par les ménestrels.");
+  updateBars();
+}
+
+// --- Fins de partie ---
+const endContent = {
+  faim: { emoji: '💀', title: 'Mort de faim', message: "Le dauphin, affamé, n'a pas survécu à l'hiver. Le royaume est en deuil." },
+  bonheur: { emoji: '💔', title: 'Mort de tristesse', message: "Privé de joie, le dauphin s'est éteint de chagrin, seul dans ses appartements." },
+  savoir: { emoji: '🥴', title: 'Le dauphin sombre dans la folie', message: "Livré à lui-même, sans précepteur, son esprit s'est égaré. Il erre dans les couloirs du château." },
+  royaume: { emoji: '⚔️', title: 'La Fronde a triomphé', message: "Négligé, le royaume s'est soulevé. Les nobles ont pris le pouvoir. Le dauphin est déchu." },
+};
+
+function showEndScreen(cause) {
+  gameOver = true;
+  clearInterval(decayTimer);
+  setButtonsDisabled(true);
+
+  const content = endContent[cause];
+  const box = document.getElementById('endBox');
+  box.classList.remove('victory', 'defeat');
+  box.classList.add(cause === 'victory' ? 'victory' : 'defeat');
+
+  document.getElementById('endEmoji').textContent = content.emoji;
+  document.getElementById('endTitle').textContent = content.title;
+  document.getElementById('endMessage').textContent = content.message;
+
+  const btn = document.getElementById('endActionBtn');
+  btn.textContent = 'Recommencer une lignée';
+  btn.onclick = resetGame;
+
+  document.getElementById('endOverlay').classList.add('open');
+}
+
+function showCoronationTransition() {
+  const name = dynastyEras[generation - 1].name;
+  const box = document.getElementById('endBox');
+  box.classList.remove('defeat');
+  box.classList.add('victory');
+
+  document.getElementById('endEmoji').textContent = '👑';
+  document.getElementById('endTitle').textContent = 'Couronnement de ' + name;
+  document.getElementById('endMessage').textContent = "Le royaume prospère sous ce règne. Une nouvelle génération s'annonce — et le royaume sera plus exigeant.";
+
+  const btn = document.getElementById('endActionBtn');
+  btn.textContent = 'Poursuivre la lignée';
+  btn.onclick = nextGeneration;
+
+  document.getElementById('endOverlay').classList.add('open');
+}
+
+function showGrandSiecleEnding() {
+  const box = document.getElementById('endBox');
+  box.classList.remove('defeat');
+  box.classList.add('victory');
+
+  document.getElementById('endEmoji').textContent = '☀️';
+  document.getElementById('endTitle').textContent = 'Le Grand Siècle';
+  document.getElementById('endMessage').textContent =
+    "Sous le règne de Louis XIV, Versailles éblouit toutes les cours d'Europe, les arts et les lettres rayonnent, les armées du royaume dominent le continent. La France s'impose comme la plus grande puissance de son temps.";
+
+  const btn = document.getElementById('endActionBtn');
+  btn.textContent = 'Recommencer une nouvelle histoire';
+  btn.onclick = resetGame;
+
+  document.getElementById('endOverlay').classList.add('open');
+}
+
+function nextGeneration() {
+  generation += 1;
+  document.getElementById('endOverlay').classList.remove('open');
+
+  stats = { faim: 70, bonheur: 70, savoir: 20 };
+  royaume = 10;
+  isKing = false;
+  gameOver = false;
+  position = 40;
+
+  document.getElementById('character').style.transform = 'scale(1)';
+  document.getElementById('character').style.left = '40px';
+  document.getElementById('character').classList.remove('is-king');
+  document.getElementById('crown').classList.remove('visible');
+  document.getElementById('pageBody').style.background = ORIGINAL_BG;
+
+  updateDynastyCounter();
+  setChronicle('Un nouveau dauphin naît. Le royaume attend beaucoup de lui.');
+  setButtonsDisabled(false);
+  updateBars();
+  startDecay();
+}
+
+function applyEraDecor() {
+  const themeEra = dynastyEras[generation - 1];
+  if (!themeEra) return;
+  const courtyard = document.querySelector('.courtyard');
+  courtyard.style.background =
+    `linear-gradient(180deg, ${themeEra.sky} 0%, ${themeEra.skyEnd} 55%, ${themeEra.ground} 55%, ${themeEra.groundEnd} 100%)`;
+  document.getElementById('eraIcon').textContent = themeEra.icon;
+
+  const character = document.getElementById('character');
+  character.classList.remove('era-0', 'era-1', 'era-2', 'era-3', 'era-4');
+  character.classList.add('era-' + (generation - 1));
+
+  const flagBanner = document.getElementById('flagBanner');
+  flagBanner.classList.remove('era-0', 'era-1', 'era-2', 'era-3', 'era-4');
+  flagBanner.classList.add('era-' + (generation - 1));
+}
+
+function updateDynastyCounter() {
+  const themeEra = dynastyEras[generation - 1];
+  document.getElementById('dynastyCounter').textContent =
+    'Génération ' + generation + ' / ' + MAX_GENERATIONS +
+    (themeEra ? ' — ' + themeEra.era + ' — souverain à venir : ' + themeEra.name : '');
+  applyEraDecor();
+}
+
+function checkEndStates() {
+  if (gameOver || isKing) return;
+  if (stats.faim <= 0) { showEndScreen('faim'); return; }
+  if (stats.bonheur <= 0) { showEndScreen('bonheur'); return; }
+  if (stats.savoir <= 0) { showEndScreen('savoir'); return; }
+  if (royaume <= 0) { showEndScreen('royaume'); return; }
+  if (royaume >= 100) { triggerCoronation(); }
+}
+
+function triggerCoronation() {
+  isKing = true;
+  gameOver = true; // gèle la partie pendant la transition
+  clearInterval(decayTimer);
+  document.getElementById('character').classList.add('is-king');
+  document.getElementById('crown').classList.add('visible');
+  setButtonsDisabled(true);
+
+  // Petit effet de couronnement avant l'écran suivant
+  document.getElementById('pageBody').style.background = 'linear-gradient(#f7d774, #1b2a4a)';
+  document.getElementById('character').style.transform = 'scale(1.3)';
+  setChronicle('👑 Vive le Roi ! Le dauphin est devenu Roi de France.');
+
+  setTimeout(() => {
+    if (generation >= MAX_GENERATIONS) {
+      showGrandSiecleEnding();
+    } else {
+      showCoronationTransition();
+    }
+  }, 1700);
+}
+
+function resetGame() {
+  stats = { faim: 70, bonheur: 70, savoir: 20 };
+  royaume = 10;
+  isKing = false;
+  gameOver = false;
+  position = 40;
+  generation = 1;
+
+  document.getElementById('character').style.left = '40px';
+  document.getElementById('character').style.transform = 'scale(1)';
+  document.getElementById('character').classList.remove('is-king');
+  document.getElementById('crown').classList.remove('visible');
+  document.getElementById('pageBody').style.background = ORIGINAL_BG;
+  document.getElementById('endOverlay').classList.remove('open');
+  setButtonsDisabled(false);
+  setChronicle('Une nouvelle lignée commence à la cour.');
+
+  updateDynastyCounter();
+  updateBars();
+  startDecay();
+}
+
+function startDecay() {
+  clearInterval(decayTimer);
+  decayTimer = setInterval(() => {
+    if (gameOver) return;
+    const difficulty = 1 + (generation - 1) * 0.2; // le royaume devient plus exigeant à chaque génération
+    stats.faim = clamp(stats.faim - Math.round(3 * difficulty));
+    stats.bonheur = clamp(stats.bonheur - Math.round(2 * difficulty));
+    stats.savoir = clamp(stats.savoir - Math.round(1 * difficulty));
+    royaume = clamp(royaume - Math.round(1 * difficulty));
+
+    const eventFired = maybeTriggerEvent();
+    if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
+      setChronicle("Le dauphin semble contrarié. Occupez-vous de lui.");
+    }
+    updateBars();
+  }, 4000);
+}
+
+updateDynastyCounter();
 updateBars();
+startDecay();
 </script>
 
 </body>
