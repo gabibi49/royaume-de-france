@@ -560,6 +560,16 @@ const GAME = {
   PROSPERITY_THRESHOLD: 80,       // au-delà de cette valeur, une jauge est jugée "florissante"
   PROSPERITY_ROYAUME_BONUS: 1,    // gain de Royaume par jauge florissante à chaque cycle
   MAX_GENERATIONS: 5,
+  DECAY_FAIM: 3,
+  DECAY_BONHEUR: 2,
+  DECAY_SAVOIR: 1,
+  DECAY_ROYAUME: 1,
+  FEED_PLAY_GAIN: 20,             // gain de jauge sur quiz réussi (nourrir / jouer)
+  TEACH_GAIN: 25,                 // gain de jauge sur quiz réussi (instruire)
+  FAIL_GAIN: 8,                   // gain de jauge sur quiz raté (le dauphin progresse un peu quand même)
+  ROYAUME_ON_QUIZ_SUCCESS: 5,     // le Royaume ne monte QUE sur bonne réponse, jamais sur mauvaise
+  REST_BONHEUR_GAIN: 8,
+  REST_FAIM_GAIN: 5,
 };
 
 const ORIGINAL_BG = 'radial-gradient(ellipse at top, #1b2a4a 0%, #101b32 70%)';
@@ -593,7 +603,7 @@ const randomEvents = [
     line: "🌾 Une disette frappe les campagnes. Les récoltes ont manqué." },
   { stat: 'royaume', amount: 10, extra: { stat: 'savoir', amount: 5 },
     line: "📯 Un ambassadeur étranger apporte des présents et de nouvelles idées à la cour." },
-  { stat: 'faim', amount: 15,
+  { stat: 'faim', amount: 15, extra: { stat: 'royaume', amount: 3 },
     line: "🌻 Une récolte exceptionnelle remplit les greniers du royaume." },
   { stat: 'royaume', amount: -10,
     line: "🗡️ Un complot se trame parmi les nobles. La couronne vacille." },
@@ -652,21 +662,24 @@ const teachBank = [
 const actionConfig = {
   feed: {
     eyebrow: "Le repas royal", bank: feedBank, stat: 'faim',
-    successGain: 20, failGain: 8, royaumeSuccess: 5, royaumeFail: 1,
+    successGain: GAME.FEED_PLAY_GAIN, failGain: GAME.FAIL_GAIN,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: 0,
     correctLine: "Le dauphin savoure un repas digne de son rang.",
     wrongLine: "Le repas n'était pas tout à fait d'époque... mais il a mangé.",
     move: true,
   },
   play: {
     eyebrow: "Le temps du loisir", bank: playBank, stat: 'bonheur',
-    successGain: 20, failGain: 8, royaumeSuccess: 5, royaumeFail: 1,
+    successGain: GAME.FEED_PLAY_GAIN, failGain: GAME.FAIL_GAIN,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: 0,
     correctLine: "Le dauphin s'est diverti comme il se doit à la cour.",
     wrongLine: "Le jeu choisi n'existait pas encore... mais il s'est amusé quand même.",
     move: true,
   },
   teach: {
     eyebrow: "Leçon du précepteur", bank: teachBank, stat: 'savoir',
-    successGain: 25, failGain: 8, royaumeSuccess: 6, royaumeFail: 1,
+    successGain: GAME.TEACH_GAIN, failGain: GAME.FAIL_GAIN,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: 0,
     correctLine: "Bien répondu ! Le dauphin retient sa leçon.",
     wrongLine: "Pas tout à fait... mais il progresse un peu quand même.",
     move: false,
@@ -785,9 +798,8 @@ function closeQuiz() {
 
 function rest() {
   if (gameOver) return;
-  stats.bonheur = clamp(stats.bonheur + 8);
-  stats.faim = clamp(stats.faim + 5);
-  royaume = clamp(royaume + 2);
+  stats.bonheur = clamp(stats.bonheur + GAME.REST_BONHEUR_GAIN);
+  stats.faim = clamp(stats.faim + GAME.REST_FAIM_GAIN);
   setChronicle("Le dauphin fait la sieste sous un dais. Il se repose, bercé par les ménestrels.");
   updateBars();
 }
@@ -859,8 +871,8 @@ function nextGeneration() {
   generation += 1;
   document.getElementById('endOverlay').classList.remove('open');
 
-  stats = { faim: 70, bonheur: 70, savoir: 20 };
-  royaume = 10;
+  stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
+  royaume = GAME.START_ROYAUME;
   isKing = false;
   gameOver = false;
   position = 40;
@@ -931,12 +943,12 @@ function triggerCoronation() {
     } else {
       showCoronationTransition();
     }
-  }, 1700);
+  }, GAME.CORONATION_DELAY_MS);
 }
 
 function resetGame() {
-  stats = { faim: 70, bonheur: 70, savoir: 20 };
-  royaume = 10;
+  stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
+  royaume = GAME.START_ROYAUME;
   isKing = false;
   gameOver = false;
   position = 40;
@@ -960,18 +972,25 @@ function startDecay() {
   clearInterval(decayTimer);
   decayTimer = setInterval(() => {
     if (gameOver) return;
-    const difficulty = 1 + (generation - 1) * 0.2; // le royaume devient plus exigeant à chaque génération
-    stats.faim = clamp(stats.faim - Math.round(3 * difficulty));
-    stats.bonheur = clamp(stats.bonheur - Math.round(2 * difficulty));
-    stats.savoir = clamp(stats.savoir - Math.round(1 * difficulty));
-    royaume = clamp(royaume - Math.round(1 * difficulty));
+    const difficulty = 1 + (generation - 1) * GAME.DIFFICULTY_STEP; // le royaume devient plus exigeant à chaque génération
+    stats.faim = clamp(stats.faim - Math.round(GAME.DECAY_FAIM * difficulty));
+    stats.bonheur = clamp(stats.bonheur - Math.round(GAME.DECAY_BONHEUR * difficulty));
+    stats.savoir = clamp(stats.savoir - Math.round(GAME.DECAY_SAVOIR * difficulty));
+    royaume = clamp(royaume - Math.round(GAME.DECAY_ROYAUME * difficulty));
+
+    // Le Royaume est une récompense, pas un gain automatique : un royaume prospère
+    // (jauges au-dessus du seuil) grignote un peu de terrain à chaque cycle.
+    const prosperousStats = ['faim', 'bonheur', 'savoir'].filter(k => stats[k] > GAME.PROSPERITY_THRESHOLD).length;
+    if (prosperousStats > 0) {
+      royaume = clamp(royaume + prosperousStats * GAME.PROSPERITY_ROYAUME_BONUS);
+    }
 
     const eventFired = maybeTriggerEvent();
     if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
       setChronicle("Le dauphin semble contrarié. Occupez-vous de lui.");
     }
     updateBars();
-  }, 4000);
+  }, GAME.DECAY_INTERVAL_MS);
 }
 
 updateDynastyCounter();
