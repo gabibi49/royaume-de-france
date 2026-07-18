@@ -56,15 +56,42 @@
     font-size: 0.95rem;
   }
 
-  .dynasty-counter {
+  .sovereign-header {
     text-align: center;
-    font-family: 'Cinzel', serif;
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    color: var(--gold-light);
     margin: -14px 0 16px;
+  }
+  .sovereign-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    color: var(--gold-light);
+    margin: 0 0 2px;
+    letter-spacing: 0.03em;
+  }
+  .sovereign-meta {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--parchment-dark);
+    margin: 0 0 8px;
     opacity: 0.9;
   }
+  .prestige-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 0.78rem;
+  }
+  .gallery-btn {
+    background: transparent;
+    color: var(--gold-light);
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 3px 10px;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .gallery-btn:hover { background: rgba(201,162,39,0.15); }
 
   .courtyard {
     position: relative;
@@ -380,6 +407,48 @@
   }
   .end-box.victory .end-title { color: var(--royal-blue); }
   .end-message { font-size: 0.95rem; margin: 0 0 6px; }
+
+  .score-compare {
+    background: rgba(27,42,74,0.08);
+    border: 1px dashed var(--royal-blue);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.85rem;
+    margin: 10px 0;
+    text-align: left;
+  }
+  .prestige-gain {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--burgundy);
+    margin: 8px 0 0;
+  }
+
+  .gallery-list {
+    max-height: 320px;
+    overflow-y: auto;
+    text-align: left;
+    margin-top: 10px;
+  }
+  .gallery-entry {
+    border-bottom: 1px solid var(--gold);
+    padding: 8px 2px;
+    font-size: 0.85rem;
+  }
+  .gallery-entry .g-name { font-weight: 600; }
+  .gallery-entry .g-score { color: var(--burgundy); font-size: 0.8rem; }
+  .gallery-close {
+    display: block;
+    margin: 14px auto 0;
+    background: var(--royal-blue);
+    color: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body id="pageBody">
@@ -387,7 +456,14 @@
 <div class="game">
   <h1>Le Petit Dauphin</h1>
   <p class="subtitle">Élevez-le bien, il deviendra Roi de France</p>
-  <p class="dynasty-counter" id="dynastyCounter">Génération 1 / 5</p>
+  <div class="sovereign-header">
+    <p class="sovereign-name" id="sovereignName">Clovis Ier</p>
+    <p class="sovereign-meta" id="sovereignMeta">Royaume Mérovingien — 481-511</p>
+    <div class="prestige-row">
+      <span id="prestigeValue">⚜️ Prestige : 0</span>
+      <button class="gallery-btn" onclick="openGallery()">📜 Galerie des Rois</button>
+    </div>
+  </div>
 
   <div class="courtyard">
     <span class="era-icon" id="eraIcon">🔥</span>
@@ -542,7 +618,17 @@
     <p class="end-emoji" id="endEmoji"></p>
     <h2 class="end-title" id="endTitle"></h2>
     <p class="end-message" id="endMessage"></p>
+    <div class="score-compare" id="scoreCompare"></div>
+    <p class="prestige-gain" id="prestigeGain"></p>
     <button class="quiz-continue visible" id="endActionBtn"></button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="galleryOverlay">
+  <div class="quiz-box">
+    <p class="quiz-eyebrow">Galerie des Rois</p>
+    <div class="gallery-list" id="galleryList"></div>
+    <button class="gallery-close" onclick="closeGallery()">Fermer</button>
   </div>
 </div>
 
@@ -570,6 +656,7 @@ const GAME = {
   ROYAUME_ON_QUIZ_SUCCESS: 5,     // le Royaume ne monte QUE sur bonne réponse, jamais sur mauvaise
   REST_BONHEUR_GAIN: 8,
   REST_FAIM_GAIN: 5,
+  ACTIONS_PER_TURN: 3,             // nombre d'actions avant que la décroissance par tour se déclenche
 };
 
 const ORIGINAL_BG = 'radial-gradient(ellipse at top, #1b2a4a 0%, #101b32 70%)';
@@ -579,21 +666,119 @@ let royaume = GAME.START_ROYAUME;
 let isKing = false;
 let gameOver = false;
 let position = 40;
-let decayTimer = null;
-let generation = 1;
-const MAX_GENERATIONS = GAME.MAX_GENERATIONS;
-const dynastyEras = [
-  { name: "Clovis Ier", era: "Royaume Mérovingien, Vème siècle", icon: "🔥",
+let actionCount = 0;
+let sovereignIndex = 0;
+let prestige = 0;
+const galleryLog = [];
+
+// Les 5 grands "looks" visuels réutilisés par les personnages/drapeaux/décors.
+// Chaque souverain du pool pointe vers l'un de ces 5 looks via son champ "era".
+const ERA_VISUALS = [
+  { label: "Royaume Mérovingien", icon: "🔥",
     sky: "#3a2f1f", skyEnd: "#5a4530", ground: "#2e2013", groundEnd: "#4a341f" },
-  { name: "Charlemagne", era: "Empire Carolingien, VIIIème siècle", icon: "🦅",
+  { label: "Empire Carolingien", icon: "🦅",
     sky: "#33324a", skyEnd: "#4d4a6e", ground: "#3a2e22", groundEnd: "#55432f" },
-  { name: "Hugues Capet", era: "Royaume Capétien, Xème siècle", icon: "🏰",
+  { label: "Moyen Âge capétien", icon: "🏰",
     sky: "#2d3f66", skyEnd: "#24365a", ground: "#3a2e22", groundEnd: "#4a3a28" },
-  { name: "Saint Louis (Louis IX)", era: "France Gothique, XIIIème siècle", icon: "⛪",
+  { label: "Renaissance et premiers Bourbons", icon: "⛪",
     sky: "#1f3a5c", skyEnd: "#2a4a78", ground: "#332a1a", groundEnd: "#4d3f22" },
-  { name: "Louis XIV, le Roi-Soleil", era: "Versailles, XVIIème siècle", icon: "⛲",
+  { label: "Versailles et époque moderne", icon: "⛲",
     sky: "#4a3f1f", skyEnd: "#8a6f2a", ground: "#5a4a1f", groundEnd: "#c9a227" },
 ];
+
+// --- Les 59 souverains réels + prétendants, générés depuis le fichier de données validé ---
+const SOVEREIGNS = [
+  { name: 'Clovis Ier', dynastie: 'Merovingiens', regne: '481-511', type: 'reel', score: 75, note: 'Unifie les Francs, conversion au catholicisme, fondateur', era: 0 },
+  { name: 'Clotaire Ier', dynastie: 'Merovingiens', regne: '511-561', type: 'reel', score: 55, note: 'Reunifie le royaume par heritage', era: 0 },
+  { name: 'Dagobert Ier', dynastie: 'Merovingiens', regne: '629-639', type: 'reel', score: 65, note: 'Dernier roi merovingien actif, reformes, essor de Saint-Denis', era: 0 },
+  { name: 'Childeric III', dynastie: 'Merovingiens', regne: '743-751', type: 'reel', score: 5, note: 'Roi faineant, depose par Pepin le Bref, tonsure et enferme au monastere', era: 0 },
+  { name: 'Pepin le Bref', dynastie: 'Carolingiens', regne: '751-768', type: 'reel', score: 60, note: 'Fonde la dynastie, sacre par le pape, victoires en Italie', era: 1 },
+  { name: 'Charlemagne', dynastie: 'Carolingiens', regne: '768-814', type: 'reel', score: 95, note: "Empereur d'Occident, expansion massive, renaissance carolingienne", era: 1 },
+  { name: 'Louis Ier le Pieux', dynastie: 'Carolingiens', regne: '814-840', type: 'reel', score: 35, note: 'Empire fracture par les luttes entre ses fils', era: 1 },
+  { name: 'Charles II le Chauve', dynastie: 'Carolingiens', regne: '840-877', type: 'reel', score: 45, note: 'Traite de Verdun, mais invasions vikings', era: 1 },
+  { name: 'Louis II le Begue', dynastie: 'Carolingiens', regne: '877-879', type: 'reel', score: 25, note: 'Regne tres court et fragile', era: 1 },
+  { name: 'Charles III le Simple', dynastie: 'Carolingiens', regne: '898-922', type: 'reel', score: 20, note: 'Capture et emprisonne par ses vassaux, depossede', era: 1 },
+  { name: "Louis IV d'Outremer", dynastie: 'Carolingiens', regne: '936-954', type: 'reel', score: 30, note: 'Roi conteste, luttes contre les grands seigneurs', era: 1 },
+  { name: 'Lothaire', dynastie: 'Carolingiens', regne: '954-986', type: 'reel', score: 35, note: 'Regne instable face a la puissance des Capetiens montants', era: 1 },
+  { name: 'Louis V le Faineant', dynastie: 'Carolingiens', regne: '986-987', type: 'reel', score: 10, note: "Regne d'un an, mort prematuree, dernier Carolingien", era: 1 },
+  { name: 'Hugues Capet', dynastie: 'Capetiens directs', regne: '987-996', type: 'reel', score: 55, note: 'Fonde la dynastie capetienne, autorite royale encore faible', era: 2 },
+  { name: 'Robert II le Pieux', dynastie: 'Capetiens directs', regne: '996-1031', type: 'reel', score: 45, note: 'Roi pieux mais peu de pouvoir reel', era: 2 },
+  { name: 'Henri Ier', dynastie: 'Capetiens directs', regne: '1031-1060', type: 'reel', score: 40, note: 'Regne discret, domaine royal restreint', era: 2 },
+  { name: 'Philippe Ier', dynastie: 'Capetiens directs', regne: '1060-1108', type: 'reel', score: 40, note: 'Regne long mais remariage scandaleux, excommunie', era: 2 },
+  { name: 'Louis VI le Gros', dynastie: 'Capetiens directs', regne: '1108-1137', type: 'reel', score: 60, note: "Renforce l'autorite royale face aux seigneurs pillards", era: 2 },
+  { name: 'Louis VII le Jeune', dynastie: 'Capetiens directs', regne: '1137-1180', type: 'reel', score: 40, note: "Deuxieme croisade en echec, repudie Alienor d'Aquitaine", era: 2 },
+  { name: 'Philippe II Auguste', dynastie: 'Capetiens directs', regne: '1180-1223', type: 'reel', score: 90, note: 'Victoire de Bouvines (1214), double le domaine royal', era: 2 },
+  { name: 'Louis VIII le Lion', dynastie: 'Capetiens directs', regne: '1223-1226', type: 'reel', score: 55, note: 'Regne court mais efficace, conquetes dans le Sud', era: 2 },
+  { name: 'Louis IX (Saint Louis)', dynastie: 'Capetiens directs', regne: '1226-1270', type: 'reel', score: 100, note: 'Justice royale exemplaire, croisades, canonise saint', era: 2 },
+  { name: 'Philippe III le Hardi', dynastie: 'Capetiens directs', regne: '1270-1285', type: 'reel', score: 35, note: "Croisade d'Aragon desastreuse", era: 2 },
+  { name: 'Philippe IV le Bel', dynastie: 'Capetiens directs', regne: '1285-1314', type: 'reel', score: 70, note: "Renforce l'Etat, proces des Templiers, finances fragilisees", era: 2 },
+  { name: 'Louis X le Hutin', dynastie: 'Capetiens directs', regne: '1314-1316', type: 'reel', score: 25, note: 'Regne bref et sans grand accomplissement', era: 2 },
+  { name: 'Jean Ier le Posthume', dynastie: 'Capetiens directs', regne: '1316', type: 'reel', score: 0, note: "Mort a 5 jours, n'a jamais vraiment regne", era: 2 },
+  { name: 'Philippe V le Long', dynastie: 'Capetiens directs', regne: '1316-1322', type: 'reel', score: 40, note: 'Reformes administratives, regne discret', era: 2 },
+  { name: 'Charles IV le Bel', dynastie: 'Capetiens directs', regne: '1322-1328', type: 'reel', score: 30, note: 'Dernier Capetien direct, pas de fils, fin de la lignee', era: 2 },
+  { name: 'Philippe VI', dynastie: 'Valois', regne: '1328-1350', type: 'reel', score: 30, note: 'Defaite de Crecy (1346), debut de la guerre de Cent Ans', era: 2 },
+  { name: 'Jean II le Bon', dynastie: 'Valois', regne: '1350-1364', type: 'reel', score: 10, note: 'Capture a Poitiers (1356), rancon ecrasante', era: 2 },
+  { name: 'Charles V le Sage', dynastie: 'Valois', regne: '1364-1380', type: 'reel', score: 75, note: "Reconquiert le terrain perdu, reforme l'administration", era: 2 },
+  { name: 'Charles VI le Fou', dynastie: 'Valois', regne: '1380-1422', type: 'reel', score: 5, note: "Sombre dans la folie, desastre d'Azincourt, deshérite son fils", era: 2 },
+  { name: 'Charles VII le Victorieux', dynastie: 'Valois', regne: '1422-1461', type: 'reel', score: 80, note: "Reconquete grace a Jeanne d'Arc, chasse les Anglais", era: 2 },
+  { name: 'Louis XI', dynastie: 'Valois', regne: '1461-1483', type: 'reel', score: 65, note: 'Renforce l\'Etat, roi ruse et impopulaire', era: 2 },
+  { name: 'Charles VIII', dynastie: 'Valois', regne: '1483-1498', type: 'reel', score: 40, note: "Campagnes d'Italie couteuses et peu fructueuses", era: 2 },
+  { name: 'Louis XII', dynastie: 'Valois', regne: '1498-1515', type: 'reel', score: 60, note: 'Pere du peuple, bonne administration', era: 3 },
+  { name: 'Francois Ier', dynastie: 'Valois', regne: '1515-1547', type: 'reel', score: 80, note: 'Victoire de Marignan, mecene de la Renaissance, captivite a Pavie', era: 3 },
+  { name: 'Henri II', dynastie: 'Valois', regne: '1547-1559', type: 'reel', score: 55, note: 'Recupere Calais, mort accidentelle en tournoi', era: 3 },
+  { name: 'Francois II', dynastie: 'Valois', regne: '1559-1560', type: 'reel', score: 15, note: "Regne d'un an, mort jeune, sous influence des Guise", era: 3 },
+  { name: 'Charles IX', dynastie: 'Valois', regne: '1560-1574', type: 'reel', score: 10, note: 'Massacre de la Saint-Barthelemy (1572)', era: 3 },
+  { name: 'Henri III', dynastie: 'Valois', regne: '1574-1589', type: 'reel', score: 25, note: 'Guerres de religion, assassine, dernier Valois', era: 3 },
+  { name: 'Henri IV', dynastie: 'Bourbons', regne: '1589-1610', type: 'reel', score: 85, note: 'Edit de Nantes, pacifie le royaume, assassine en pleine popularite', era: 3 },
+  { name: 'Louis XIII', dynastie: 'Bourbons', regne: '1610-1643', type: 'reel', score: 60, note: "Regne efface derriere Richelieu, renforcement de l'Etat", era: 3 },
+  { name: 'Louis XIV', dynastie: 'Bourbons', regne: '1643-1715', type: 'reel', score: 95, note: 'Vainc la Fronde, Versailles, apogee du royaume, le Grand Siecle', era: 4 },
+  { name: 'Louis XV', dynastie: 'Bourbons', regne: '1715-1774', type: 'reel', score: 35, note: 'Perte du Canada et des Indes, impopularite croissante', era: 4 },
+  { name: 'Louis XVI', dynastie: 'Bourbons', regne: '1774-1792', type: 'reel', score: 18, note: 'Reformes sincères (aboli la torture, edit de tolerance), mais indecis face a la crise, depose et execute', era: 4 },
+  { name: 'Louis XVIII', dynastie: 'Restauration', regne: '1814-1824', type: 'reel', score: 45, note: 'Restauration, Charte constitutionnelle', era: 4 },
+  { name: 'Charles X', dynastie: 'Restauration', regne: '1824-1830', type: 'reel', score: 20, note: 'Chasse par la revolution de 1830', era: 4 },
+  { name: 'Louis-Philippe Ier', dynastie: 'Monarchie de Juillet', regne: '1830-1848', type: 'reel', score: 40, note: 'Roi des Francais, chasse par la revolution de 1848', era: 4 },
+  { name: 'Louis XIX', dynastie: 'Non-regnant (legitimiste)', regne: '1830', type: 'non_regnant', score: 0, note: "Roi environ 20 minutes lors de l'abdication en cascade de Charles X", era: 4 },
+  { name: 'Henri V', dynastie: 'Non-regnant (legitimiste)', regne: '1844-1883', type: 'non_regnant', score: 0, note: 'Comte de Chambord, jamais couronne, refuse le drapeau tricolore', era: 4 },
+  { name: 'Jean III', dynastie: 'Non-regnant (legitimiste)', regne: '1883-1887', type: 'non_regnant', score: 0, note: 'Comte de Montizon, pretendant legitimiste', era: 4 },
+  { name: 'Charles XI', dynastie: 'Non-regnant (legitimiste)', regne: '1887-1901', type: 'non_regnant', score: 0, note: 'Duc de Madrid, pretendant legitimiste', era: 4 },
+  { name: 'Jacques Ier', dynastie: 'Non-regnant (legitimiste)', regne: '1901-1931', type: 'non_regnant', score: 0, note: "Duc d'Anjou et de Madrid, pretendant legitimiste", era: 4 },
+  { name: 'Charles XII', dynastie: 'Non-regnant (legitimiste)', regne: '1931-1936', type: 'non_regnant', score: 0, note: "Duc d'Anjou et de San Jaime, pretendant legitimiste", era: 4 },
+  { name: 'Alphonse Ier', dynastie: 'Non-regnant (legitimiste)', regne: '1936-1941', type: 'non_regnant', score: 0, note: "Alphonse XIII d'Espagne, pretendant legitimiste", era: 4 },
+  { name: 'Henri VI', dynastie: 'Non-regnant (legitimiste)', regne: '1941-1975', type: 'non_regnant', score: 0, note: "Duc d'Anjou et de Segovie, pretendant legitimiste", era: 4 },
+  { name: 'Alphonse II', dynastie: 'Non-regnant (legitimiste)', regne: '1975-1989', type: 'non_regnant', score: 0, note: "Duc d'Anjou et de Cadix, pretendant legitimiste", era: 4 },
+  { name: 'Louis XX', dynastie: 'Non-regnant (legitimiste)', regne: 'depuis 1989', type: 'non_regnant', score: 0, note: 'Louis-Alphonse de Bourbon, pretendant legitimiste actuel', era: 4 },
+];
+
+const REAL_COUNT = SOVEREIGNS.filter(s => s.type === 'reel').length; // 51
+const PROCEDURAL_NAMES = ['Louis', 'Henri', 'Philippe', 'Charles', 'Jean', 'François', 'Robert'];
+const proceduralStart = { Louis: 21, Henri: 8, Philippe: 9, Charles: 13, Jean: 5, 'François': 3, Robert: 3 };
+const proceduralCounters = Object.assign({}, proceduralStart);
+
+function toRoman(num) {
+  const table = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  let result = '';
+  for (const [value, symbol] of table) {
+    while (num >= value) { result += symbol; num -= value; }
+  }
+  return result;
+}
+
+function generateProceduralSovereign(n) {
+  const name = PROCEDURAL_NAMES[n % PROCEDURAL_NAMES.length];
+  const numeral = proceduralCounters[name];
+  proceduralCounters[name] += 1;
+  return {
+    name: name + ' ' + toRoman(numeral),
+    dynastie: 'Lignée imaginaire', regne: 'règne fictif', type: 'procedural',
+    score: null, note: 'Souverain imaginaire, généré pour prolonger la dynastie au-delà des rois et prétendants réels.',
+    era: 4,
+  };
+}
+
+function getCurrentSovereign() {
+  if (sovereignIndex < SOVEREIGNS.length) return SOVEREIGNS[sovereignIndex];
+  return generateProceduralSovereign(sovereignIndex - SOVEREIGNS.length);
+}
 
 // Événements aléatoires rares, en plus de la routine des 4 actions
 const randomEvents = [
@@ -794,6 +979,7 @@ function closeQuiz() {
 
   if (cfg.move) moveCharacter();
   updateBars();
+  registerAction();
 }
 
 function rest() {
@@ -802,6 +988,7 @@ function rest() {
   stats.faim = clamp(stats.faim + GAME.REST_FAIM_GAIN);
   setChronicle("Le dauphin fait la sieste sous un dais. Il se repose, bercé par les ménestrels.");
   updateBars();
+  registerAction();
 }
 
 // --- Fins de partie ---
@@ -810,72 +997,135 @@ const endContent = {
   bonheur: { emoji: '💔', title: 'Mort de tristesse', message: "Privé de joie, le dauphin s'est éteint de chagrin, seul dans ses appartements." },
   savoir: { emoji: '🥴', title: 'Le dauphin sombre dans la folie', message: "Livré à lui-même, sans précepteur, son esprit s'est égaré. Il erre dans les couloirs du château." },
   royaume: { emoji: '⚔️', title: 'La Fronde a triomphé', message: "Négligé, le royaume s'est soulevé. Les nobles ont pris le pouvoir. Le dauphin est déchu." },
+  victory: { emoji: '👑', title: 'Couronnement', message: "Le royaume prospère sous ce règne. Une nouvelle page de la lignée s'écrit.", chronicle: '👑 Vive le Roi !' },
 };
 
-function showEndScreen(cause) {
+function applyEraDecor() {
+  const sovereign = getCurrentSovereign();
+  const visual = ERA_VISUALS[sovereign.era];
+  const courtyard = document.querySelector('.courtyard');
+  courtyard.style.background =
+    `linear-gradient(180deg, ${visual.sky} 0%, ${visual.skyEnd} 55%, ${visual.ground} 55%, ${visual.groundEnd} 100%)`;
+  document.getElementById('eraIcon').textContent = visual.icon;
+
+  const character = document.getElementById('character');
+  character.classList.remove('era-0', 'era-1', 'era-2', 'era-3', 'era-4');
+  character.classList.add('era-' + sovereign.era);
+
+  const flagBanner = document.getElementById('flagBanner');
+  flagBanner.classList.remove('era-0', 'era-1', 'era-2', 'era-3', 'era-4');
+  flagBanner.classList.add('era-' + sovereign.era);
+}
+
+function updateSovereignHeader() {
+  const sovereign = getCurrentSovereign();
+  document.getElementById('sovereignName').textContent = sovereign.name;
+  document.getElementById('sovereignMeta').textContent =
+    ERA_VISUALS[sovereign.era].label + ' — ' + sovereign.dynastie + ' — ' + sovereign.regne;
+  document.getElementById('prestigeValue').textContent = '⚜️ Prestige : ' + prestige;
+  applyEraDecor();
+}
+
+function computeScore() {
+  const avgNeeds = (stats.faim + stats.bonheur + stats.savoir) / 3;
+  return Math.round(clamp(avgNeeds * 0.7 + royaume * 0.3));
+}
+
+function openGallery() {
+  const listEl = document.getElementById('galleryList');
+  if (galleryLog.length === 0) {
+    listEl.innerHTML = '<p style="font-style:italic;">Aucun règne achevé pour l\'instant.</p>';
+  } else {
+    listEl.innerHTML = galleryLog.slice().reverse().map(entry => `
+      <div class="gallery-entry">
+        <div class="g-name">${entry.name} — ${entry.causeLabel}</div>
+        <div class="g-score">Score : ${entry.score}${entry.refScore !== null ? ' (réel : ' + entry.refScore + ')' : ''} — +${entry.prestigeGain} Prestige</div>
+      </div>
+    `).join('');
+  }
+  document.getElementById('galleryOverlay').classList.add('open');
+}
+
+function closeGallery() {
+  document.getElementById('galleryOverlay').classList.remove('open');
+}
+
+function checkEndStates() {
+  if (gameOver) return;
+  if (stats.faim <= 0) { endRun('faim'); return; }
+  if (stats.bonheur <= 0) { endRun('bonheur'); return; }
+  if (stats.savoir <= 0) { endRun('savoir'); return; }
+  if (royaume <= 0) { endRun('royaume'); return; }
+  if (royaume >= 100) { endRun('victory'); }
+}
+
+function endRun(cause) {
   gameOver = true;
-  clearInterval(decayTimer);
   setButtonsDisabled(true);
 
+  const sovereign = getCurrentSovereign();
+  const finalScore = computeScore();
+  const prestigeGain = Math.max(Math.round(finalScore / 10), 1) + (cause === 'victory' ? 5 : 0);
+  prestige += prestigeGain;
+
+  galleryLog.push({
+    name: sovereign.name,
+    causeLabel: endContent[cause].title,
+    score: finalScore,
+    refScore: sovereign.score,
+    prestigeGain,
+  });
+
+  if (cause === 'victory') {
+    document.getElementById('character').classList.add('is-king');
+    document.getElementById('crown').classList.add('visible');
+    document.getElementById('pageBody').style.background = 'linear-gradient(#f7d774, #1b2a4a)';
+    document.getElementById('character').style.transform = 'scale(1.3)';
+  }
+  setChronicle(endContent[cause].chronicle || endContent[cause].title);
+
+  setTimeout(() => showEndScreen(cause, sovereign, finalScore, prestigeGain),
+    cause === 'victory' ? GAME.CORONATION_DELAY_MS : 0);
+}
+
+function showEndScreen(cause, sovereign, finalScore, prestigeGain) {
   const content = endContent[cause];
   const box = document.getElementById('endBox');
   box.classList.remove('victory', 'defeat');
   box.classList.add(cause === 'victory' ? 'victory' : 'defeat');
 
   document.getElementById('endEmoji').textContent = content.emoji;
-  document.getElementById('endTitle').textContent = content.title;
+  document.getElementById('endTitle').textContent = cause === 'victory' ? 'Couronnement de ' + sovereign.name : content.title;
   document.getElementById('endMessage').textContent = content.message;
 
+  const compareEl = document.getElementById('scoreCompare');
+  if (sovereign.score !== null) {
+    compareEl.textContent = `Votre score : ${finalScore}. ${sovereign.name} (réel) avait atteint ${sovereign.score} : ${sovereign.note}`;
+  } else {
+    compareEl.textContent = `Votre score : ${finalScore}. ${sovereign.name} est un souverain imaginaire, sans référence historique.`;
+  }
+  document.getElementById('prestigeGain').textContent = `+${prestigeGain} Prestige (total : ${prestige})`;
+
   const btn = document.getElementById('endActionBtn');
-  btn.textContent = 'Recommencer une lignée';
-  btn.onclick = resetGame;
+  btn.textContent = 'Souverain suivant';
+  btn.onclick = nextSovereign;
 
   document.getElementById('endOverlay').classList.add('open');
 }
 
-function showCoronationTransition() {
-  const name = dynastyEras[generation - 1].name;
-  const box = document.getElementById('endBox');
-  box.classList.remove('defeat');
-  box.classList.add('victory');
-
-  document.getElementById('endEmoji').textContent = '👑';
-  document.getElementById('endTitle').textContent = 'Couronnement de ' + name;
-  document.getElementById('endMessage').textContent = "Le royaume prospère sous ce règne. Une nouvelle génération s'annonce — et le royaume sera plus exigeant.";
-
-  const btn = document.getElementById('endActionBtn');
-  btn.textContent = 'Poursuivre la lignée';
-  btn.onclick = nextGeneration;
-
-  document.getElementById('endOverlay').classList.add('open');
-}
-
-function showGrandSiecleEnding() {
-  const box = document.getElementById('endBox');
-  box.classList.remove('defeat');
-  box.classList.add('victory');
-
-  document.getElementById('endEmoji').textContent = '☀️';
-  document.getElementById('endTitle').textContent = 'Le Grand Siècle';
-  document.getElementById('endMessage').textContent =
-    "Sous le règne de Louis XIV, Versailles éblouit toutes les cours d'Europe, les arts et les lettres rayonnent, les armées du royaume dominent le continent. La France s'impose comme la plus grande puissance de son temps.";
-
-  const btn = document.getElementById('endActionBtn');
-  btn.textContent = 'Recommencer une nouvelle histoire';
-  btn.onclick = resetGame;
-
-  document.getElementById('endOverlay').classList.add('open');
-}
-
-function nextGeneration() {
-  generation += 1;
+function nextSovereign() {
   document.getElementById('endOverlay').classList.remove('open');
+
+  const wasLastReal = sovereignIndex === REAL_COUNT - 1;
+  const wasLastNonRegnant = sovereignIndex === SOVEREIGNS.length - 1;
+  sovereignIndex += 1;
 
   stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
   royaume = GAME.START_ROYAUME;
   isKing = false;
   gameOver = false;
   position = 40;
+  actionCount = 0;
 
   document.getElementById('character').style.transform = 'scale(1)';
   document.getElementById('character').style.left = '40px';
@@ -883,119 +1133,52 @@ function nextGeneration() {
   document.getElementById('crown').classList.remove('visible');
   document.getElementById('pageBody').style.background = ORIGINAL_BG;
 
-  updateDynastyCounter();
-  setChronicle('Un nouveau dauphin naît. Le royaume attend beaucoup de lui.');
+  updateSovereignHeader();
   setButtonsDisabled(false);
+
+  if (wasLastReal) {
+    setChronicle('Les rois de France s\'arrêtent ici. Place aux prétendants qui n\'ont jamais régné.');
+  } else if (wasLastNonRegnant) {
+    setChronicle('La lignée continue désormais avec des souverains imaginaires.');
+  } else {
+    setChronicle('Un nouveau souverain naît. Le royaume attend beaucoup de lui.');
+  }
   updateBars();
-  startDecay();
 }
 
-function applyEraDecor() {
-  const themeEra = dynastyEras[generation - 1];
-  if (!themeEra) return;
-  const courtyard = document.querySelector('.courtyard');
-  courtyard.style.background =
-    `linear-gradient(180deg, ${themeEra.sky} 0%, ${themeEra.skyEnd} 55%, ${themeEra.ground} 55%, ${themeEra.groundEnd} 100%)`;
-  document.getElementById('eraIcon').textContent = themeEra.icon;
-
-  const character = document.getElementById('character');
-  character.classList.remove('era-0', 'era-1', 'era-2', 'era-3', 'era-4');
-  character.classList.add('era-' + (generation - 1));
-
-  const flagBanner = document.getElementById('flagBanner');
-  flagBanner.classList.remove('era-0', 'era-1', 'era-2', 'era-3', 'era-4');
-  flagBanner.classList.add('era-' + (generation - 1));
+// --- Le tour : chaque action compte, la décroissance arrive tous les 3 tours (pas de timer) ---
+function registerAction() {
+  if (gameOver) return;
+  actionCount += 1;
+  if (actionCount >= GAME.ACTIONS_PER_TURN) {
+    actionCount = 0;
+    applyTurnDecay();
+  }
 }
 
-function updateDynastyCounter() {
-  const themeEra = dynastyEras[generation - 1];
-  document.getElementById('dynastyCounter').textContent =
-    'Génération ' + generation + ' / ' + MAX_GENERATIONS +
-    (themeEra ? ' — ' + themeEra.era + ' — souverain à venir : ' + themeEra.name : '');
-  applyEraDecor();
-}
+function applyTurnDecay() {
+  const difficulty = 1 + Math.floor(sovereignIndex / 5) * GAME.DIFFICULTY_STEP;
+  stats.faim = clamp(stats.faim - Math.round(GAME.DECAY_FAIM * difficulty));
+  stats.bonheur = clamp(stats.bonheur - Math.round(GAME.DECAY_BONHEUR * difficulty));
+  stats.savoir = clamp(stats.savoir - Math.round(GAME.DECAY_SAVOIR * difficulty));
+  royaume = clamp(royaume - Math.round(GAME.DECAY_ROYAUME * difficulty));
 
-function checkEndStates() {
-  if (gameOver || isKing) return;
-  if (stats.faim <= 0) { showEndScreen('faim'); return; }
-  if (stats.bonheur <= 0) { showEndScreen('bonheur'); return; }
-  if (stats.savoir <= 0) { showEndScreen('savoir'); return; }
-  if (royaume <= 0) { showEndScreen('royaume'); return; }
-  if (royaume >= 100) { triggerCoronation(); }
-}
+  // Le Royaume est une récompense, pas un gain automatique : un royaume prospère
+  // (jauges au-dessus du seuil) grignote un peu de terrain à chaque tour.
+  const prosperousStats = ['faim', 'bonheur', 'savoir'].filter(k => stats[k] > GAME.PROSPERITY_THRESHOLD).length;
+  if (prosperousStats > 0) {
+    royaume = clamp(royaume + prosperousStats * GAME.PROSPERITY_ROYAUME_BONUS);
+  }
 
-function triggerCoronation() {
-  isKing = true;
-  gameOver = true; // gèle la partie pendant la transition
-  clearInterval(decayTimer);
-  document.getElementById('character').classList.add('is-king');
-  document.getElementById('crown').classList.add('visible');
-  setButtonsDisabled(true);
-
-  // Petit effet de couronnement avant l'écran suivant
-  document.getElementById('pageBody').style.background = 'linear-gradient(#f7d774, #1b2a4a)';
-  document.getElementById('character').style.transform = 'scale(1.3)';
-  setChronicle('👑 Vive le Roi ! Le dauphin est devenu Roi de France.');
-
-  setTimeout(() => {
-    if (generation >= MAX_GENERATIONS) {
-      showGrandSiecleEnding();
-    } else {
-      showCoronationTransition();
-    }
-  }, GAME.CORONATION_DELAY_MS);
-}
-
-function resetGame() {
-  stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
-  royaume = GAME.START_ROYAUME;
-  isKing = false;
-  gameOver = false;
-  position = 40;
-  generation = 1;
-
-  document.getElementById('character').style.left = '40px';
-  document.getElementById('character').style.transform = 'scale(1)';
-  document.getElementById('character').classList.remove('is-king');
-  document.getElementById('crown').classList.remove('visible');
-  document.getElementById('pageBody').style.background = ORIGINAL_BG;
-  document.getElementById('endOverlay').classList.remove('open');
-  setButtonsDisabled(false);
-  setChronicle('Une nouvelle lignée commence à la cour.');
-
-  updateDynastyCounter();
+  const eventFired = maybeTriggerEvent();
+  if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
+    setChronicle("Le dauphin semble contrarié. Occupez-vous de lui.");
+  }
   updateBars();
-  startDecay();
 }
 
-function startDecay() {
-  clearInterval(decayTimer);
-  decayTimer = setInterval(() => {
-    if (gameOver) return;
-    const difficulty = 1 + (generation - 1) * GAME.DIFFICULTY_STEP; // le royaume devient plus exigeant à chaque génération
-    stats.faim = clamp(stats.faim - Math.round(GAME.DECAY_FAIM * difficulty));
-    stats.bonheur = clamp(stats.bonheur - Math.round(GAME.DECAY_BONHEUR * difficulty));
-    stats.savoir = clamp(stats.savoir - Math.round(GAME.DECAY_SAVOIR * difficulty));
-    royaume = clamp(royaume - Math.round(GAME.DECAY_ROYAUME * difficulty));
-
-    // Le Royaume est une récompense, pas un gain automatique : un royaume prospère
-    // (jauges au-dessus du seuil) grignote un peu de terrain à chaque cycle.
-    const prosperousStats = ['faim', 'bonheur', 'savoir'].filter(k => stats[k] > GAME.PROSPERITY_THRESHOLD).length;
-    if (prosperousStats > 0) {
-      royaume = clamp(royaume + prosperousStats * GAME.PROSPERITY_ROYAUME_BONUS);
-    }
-
-    const eventFired = maybeTriggerEvent();
-    if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
-      setChronicle("Le dauphin semble contrarié. Occupez-vous de lui.");
-    }
-    updateBars();
-  }, GAME.DECAY_INTERVAL_MS);
-}
-
-updateDynastyCounter();
+updateSovereignHeader();
 updateBars();
-startDecay();
 </script>
 
 </body>
