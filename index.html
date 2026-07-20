@@ -261,6 +261,25 @@
     background: linear-gradient(90deg, #3a5a8a, var(--gold-light));
   }
 
+.turn-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 0.75rem;
+    color: var(--parchment-dark);
+  }
+  .turn-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    transition: background 0.3s;
+  }
+  .turn-dot.filled { background: var(--gold); }
+  
   .actions {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -593,6 +612,15 @@
     </div>
   </div>
 
+
+  <div class="turn-counter" id="turnCounter">
+    <span class="turn-label">Prochaine saison :</span>
+    <span class="turn-dot" id="turnDot0"></span>
+    <span class="turn-dot" id="turnDot1"></span>
+    <span class="turn-dot" id="turnDot2"></span>
+  </div>
+
+
   <div class="actions">
     <button class="seal-btn" id="btn-feed" onclick="startQuiz('feed')"><span class="icon">🍞</span>Nourrir</button>
     <button class="seal-btn" id="btn-play" onclick="startQuiz('play')"><span class="icon">🎭</span>Jouer</button>
@@ -828,7 +856,7 @@ const playBank = [
   { q: "Quel loisir était réservé à la noblesse pour chasser le gibier à plumes ?", options: ["La chasse au faucon", "Le flipper", "Le jeu vidéo"], correct: 0 },
   { q: "Quel jeu, ancêtre du tennis, se pratiquait déjà à la cour ?", options: ["Le jeu de paume", "Le bowling", "Le ping-pong"], correct: 0 },
   { q: "Quel divertissement mettait en scène des chevaliers en armure s'affrontant à cheval ?", options: ["Le tournoi de joute", "Le rallye automobile", "Le tir à l'arc laser"], correct: 0 },
-  { q: "Quel jeu de plateau, venu de Perse via les croisades, était très prisé des seigneurs ?", options: ["Les échecs", "Le Monopoly", "Le Uno"], correct: 0 },
+  { q: "Quel jeu de plateau, originaire d'Orient, était très prisé des seigneurs médiévaux ?", options: ["Les échecs", "Le Monopoly", "Le Uno"], correct: 0 },
   { q: "Les bals à la cour se dansaient principalement au son de...", options: ["Luths et violes", "Guitares électriques", "Synthétiseurs"], correct: 0 },
 ];
 
@@ -837,7 +865,7 @@ const teachBank = [
   { q: "En quelle année a eu lieu le sacre de Charlemagne ?", options: ["800", "1515", "1066"], correct: 0 },
   { q: "Qui était surnommé \"le Roi Soleil\" ?", options: ["Louis XVI", "Louis XIV", "Henri IV"], correct: 1 },
   { q: "Quel roi a promulgué l'édit de Nantes ?", options: ["Henri IV", "François Ier", "Philippe le Bel"], correct: 0 },
-  { q: "Quelle bataille a marqué la victoire française sur les Anglais en 1515 ?", options: ["Marignan", "Azincourt", "Hastings"], correct: 0 },
+  { q: "Contre qui François Ier a-t-il remporté la bataille de Marignan en 1515 ?", options: ["Les Suisses", "Les Anglais", "Les Espagnols"], correct: 0 },
   { q: "Qui était le premier roi de la dynastie capétienne ?", options: ["Hugues Capet", "Clovis", "Charles VII"], correct: 0 },
   { q: "Quel roi a été guidé par Jeanne d'Arc ?", options: ["Charles VII", "Louis XI", "Philippe Auguste"], correct: 0 },
   { q: "Sous quel roi la Bastille a-t-elle été prise, en 1789 ?", options: ["Louis XVI", "Louis XV", "Louis XIV"], correct: 0 },
@@ -922,12 +950,25 @@ function pickQuestion(type) {
   usedQuestions[type].push(idx);
   return bank[idx];
 }
-
+  
+function shuffleOptions(question) {
+  const indices = question.options.map((_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return {
+    q: question.q,
+    options: indices.map(i => question.options[i]),
+    correct: indices.indexOf(question.correct),
+  };
+}
+  
 function startQuiz(type) {
   if (gameOver) return;
   currentAction = type;
   const cfg = actionConfig[type];
-  const question = pickQuestion(type);
+  const question = shuffleOptions(pickQuestion(type));
 
   document.getElementById('quizEyebrow').textContent = cfg.eyebrow;
   const qEl = document.getElementById('quizQuestion');
@@ -1126,6 +1167,7 @@ function nextSovereign() {
   gameOver = false;
   position = 40;
   actionCount = 0;
+  updateTurnCounter();
 
   document.getElementById('character').style.transform = 'scale(1)';
   document.getElementById('character').style.left = '40px';
@@ -1150,9 +1192,18 @@ function nextSovereign() {
 function registerAction() {
   if (gameOver) return;
   actionCount += 1;
+  updateTurnCounter();
   if (actionCount >= GAME.ACTIONS_PER_TURN) {
     actionCount = 0;
+    updateTurnCounter();
     applyTurnDecay();
+  }
+}
+
+function updateTurnCounter() {
+  for (let i = 0; i < GAME.ACTIONS_PER_TURN; i++) {
+    const dot = document.getElementById('turnDot' + i);
+    if (dot) dot.classList.toggle('filled', i < actionCount);
   }
 }
 
