@@ -487,8 +487,8 @@
   <h1>Le Petit Dauphin</h1>
   <p class="subtitle">Élevez-le bien, il deviendra Roi de France</p>
   <div class="sovereign-header">
-    <p class="sovereign-name" id="sovereignName">Clovis Ier</p>
-    <p class="sovereign-meta" id="sovereignMeta">Royaume Mérovingien — 481-511</p>
+    <p class="sovereign-name" id="sovereignName">Le Dauphin</p>
+    <p class="sovereign-meta" id="sovereignMeta">Destiné à devenir Clovis Ier — Royaume Mérovingien</p>
     <div class="prestige-row">
       <span id="prestigeValue">⚜️ Prestige : 0</span>
       <button class="gallery-btn" onclick="openGallery()">📜 Galerie des Rois</button>
@@ -621,7 +621,7 @@
       <div class="stat-label">⚜️ Royaume</div>
       <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-royaume" style="width:10%"></div></div>
     </div>
-    <p class="royaume-hint">Ne monte que sur bonne réponse, jauge florissante (&gt;80), ou événement favorable.</p>
+    <p class="royaume-hint">Compte pour le score final. Chute à 0 = la Fronde triomphe.</p>
   </div>
 
 
@@ -1050,7 +1050,7 @@ const endContent = {
   bonheur: { emoji: '💔', title: 'Mort de tristesse', message: "Privé de joie, le dauphin s'est éteint de chagrin, seul dans ses appartements." },
   savoir: { emoji: '🥴', title: 'Le dauphin sombre dans la folie', message: "Livré à lui-même, sans précepteur, son esprit s'est égaré. Il erre dans les couloirs du château." },
   royaume: { emoji: '⚔️', title: 'La Fronde a triomphé', message: "Négligé, le royaume s'est soulevé. Les nobles ont pris le pouvoir. Le dauphin est déchu." },
-  victory: { emoji: '👑', title: 'Couronnement', message: "Le royaume prospère sous ce règne. Une nouvelle page de la lignée s'écrit.", chronicle: '👑 Vive le Roi !' },
+  victory: { emoji: '👑', title: 'Couronnement', message: "Le dauphin achève sa formation et est jugé digne de régner. Une nouvelle page de la lignée s'écrit.", chronicle: '👑 Vive le Roi ! Sa formation est achevée.' },
 };
 
 function applyEraDecor() {
@@ -1072,9 +1072,9 @@ function applyEraDecor() {
 
 function updateSovereignHeader() {
   const sovereign = getCurrentSovereign();
-  document.getElementById('sovereignName').textContent = sovereign.name;
+  document.getElementById('sovereignName').textContent = 'Le Dauphin';
   document.getElementById('sovereignMeta').textContent =
-    ERA_VISUALS[sovereign.era].label + ' — ' + sovereign.dynastie + ' — ' + sovereign.regne;
+    'Destiné à devenir ' + sovereign.name + ' — ' + ERA_VISUALS[sovereign.era].label;
   document.getElementById('prestigeValue').textContent = '⚜️ Prestige : ' + prestige;
   applyEraDecor();
 }
@@ -1109,7 +1109,7 @@ function checkEndStates() {
   if (stats.bonheur <= 0) { endRun('bonheur'); return; }
   if (stats.savoir <= 0) { endRun('savoir'); return; }
   if (royaume <= 0) { endRun('royaume'); return; }
-  if (royaume >= 100) { endRun('victory'); }
+  if (stats.savoir >= 100) { endRun('victory'); }
 }
 
 function endRun(cause) {
