@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Le Petit Dauphin</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
@@ -713,6 +714,26 @@ let sovereignIndex = 0;
 let prestige = 0;
 const galleryLog = [];
 
+const SAVE_KEY = 'petitDauphinSave';
+
+function saveProgress() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ sovereignIndex, prestige, galleryLog, proceduralCounters }));
+  } catch (e) { /* stockage indisponible, on continue sans sauvegarder */ }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    sovereignIndex = saved.sovereignIndex || 0;
+    prestige = saved.prestige || 0;
+    if (Array.isArray(saved.galleryLog)) galleryLog.push(...saved.galleryLog);
+    if (saved.proceduralCounters) Object.assign(proceduralCounters, saved.proceduralCounters);
+  } catch (e) { /* sauvegarde corrompue ou absente, on repart de zéro */ }
+}
+
 // Les 5 grands "looks" visuels réutilisés par les personnages/drapeaux/décors.
 // Chaque souverain du pool pointe vers l'un de ces 5 looks via son champ "era".
 const ERA_VISUALS = [
@@ -864,6 +885,14 @@ const feedBank = [
   { q: "Quelle boisson était couramment servie à table, plus que l'eau jugée impure ?", options: ["Le vin coupé d'eau", "Le soda", "Le café glacé"], correct: 0 },
   { q: "Quel épice, très chère, symbolisait le prestige d'un banquet royal ?", options: ["Le poivre", "Le paprika", "Le piment"], correct: 0 },
   { q: "Le sucre, au Moyen Âge, était surtout utilisé comme...", options: ["Un remède de pharmacien, très rare", "Un ingrédient banal et bon marché", "Un colorant textile"], correct: 0 },
+  { q: "Quelle céréale servait de base au pain quotidien au Moyen Âge ?", options: ["Le blé", "Le maïs", "Le riz"], correct: 0 },
+  { q: "Que mangeaient le plus souvent les paysans, faute de viande ?", options: ["Une soupe ou bouillie de céréales et légumes", "Des steaks grillés", "Des huîtres"], correct: 0 },
+  { q: "Le sel était-il un produit courant ou une denrée précieuse et taxée ?", options: ["Précieux et taxé (la gabelle)", "Courant et gratuit", "Interdit à la vente"], correct: 0 },
+  { q: "Quel fruit était totalement absent des tables médiévales françaises ?", options: ["L'ananas", "La pomme", "La poire"], correct: 0 },
+  { q: "Quelle viande était réservée à la noblesse via le droit de chasse ?", options: ["Le gibier (cerf, sanglier)", "Le poulet", "Le porc"], correct: 0 },
+  { q: "Quel édulcorant, avant le sucre raffiné, servait à sucrer les plats ?", options: ["Le miel", "Le sirop d'érable", "L'aspartam"], correct: 0 },
+  { q: "Les repas de la noblesse étaient-ils servis en plusieurs services successifs ?", options: ["Oui, en plusieurs services fastueux", "Non, tout était servi en une seule fois", "Non, chacun mangeait dans sa chambre"], correct: 0 },
+  { q: "Quelle boisson chaude, aujourd'hui courante, était totalement inconnue en France avant le XVIIe siècle ?", options: ["Le café", "Le vin chaud", "L'hydromel"], correct: 0 },
 ];
 
 const playBank = [
@@ -872,6 +901,14 @@ const playBank = [
   { q: "Quel divertissement mettait en scène des chevaliers en armure s'affrontant à cheval ?", options: ["Le tournoi de joute", "Le rallye automobile", "Le tir à l'arc laser"], correct: 0 },
   { q: "Quel jeu de plateau, originaire d'Orient, était très prisé des seigneurs médiévaux ?", options: ["Les échecs", "Le Monopoly", "Le Uno"], correct: 0 },
   { q: "Les bals à la cour se dansaient principalement au son de...", options: ["Luths et violes", "Guitares électriques", "Synthétiseurs"], correct: 0 },
+  { q: "Quel instrument à cordes pincées était emblématique des troubadours ?", options: ["Le luth", "La guitare électrique", "Le piano"], correct: 0 },
+  { q: "Quel divertissement mêlait acrobates, jongleurs et conteurs sur les places publiques ?", options: ["Les spectacles de ménestrels et jongleurs", "Le cinéma ambulant", "Les concerts de rock"], correct: 0 },
+  { q: "La chasse était-elle un loisir libre pour tous, ou réservée par rang social ?", options: ["Réservée selon des droits hiérarchisés", "Libre et ouverte à tous sans restriction", "Interdite à la noblesse"], correct: 0 },
+  { q: "Quel jeu de hasard, joué avec des cubes numérotés, était répandu jusqu'à la cour ?", options: ["Les dés", "Les cartes à jouer modernes", "Le poker"], correct: 0 },
+  { q: "Quelles fêtes rythmaient l'année et rassemblaient la cour autour de banquets ?", options: ["Les fêtes religieuses (Noël, Pâques...)", "Le Nouvel An chinois", "Halloween"], correct: 0 },
+  { q: "Quel loisir nécessitait un cheval dressé et un gantelet de cuir ?", options: ["La fauconnerie", "Le jeu de paume", "Les échecs"], correct: 0 },
+  { q: "Les tournois de chevalerie servaient-ils uniquement au divertissement ?", options: ["Non, aussi à l'entraînement militaire et au prestige", "Oui, purement pour le spectacle", "Non, c'était une punition judiciaire"], correct: 0 },
+  { q: "Quel sport actuel, sous sa forme moderne, n'existait pas du tout au Moyen Âge ?", options: ["Le football moderne", "La chasse", "Les échecs"], correct: 0 },
 ];
 
 const teachBank = [
@@ -883,7 +920,63 @@ const teachBank = [
   { q: "Qui était le premier roi de la dynastie capétienne ?", options: ["Hugues Capet", "Clovis", "Charles VII"], correct: 0 },
   { q: "Quel roi a été guidé par Jeanne d'Arc ?", options: ["Charles VII", "Louis XI", "Philippe Auguste"], correct: 0 },
   { q: "Sous quel roi la Bastille a-t-elle été prise, en 1789 ?", options: ["Louis XVI", "Louis XV", "Louis XIV"], correct: 0 },
+  { q: "Quel traité de 843 partage l'empire carolingien entre les petits-fils de Charlemagne ?", options: ["Le traité de Verdun", "Le traité de Westphalie", "Le traité de Troyes"], correct: 0 },
+  { q: "Quelle guerre opposa la France et l'Angleterre de 1337 à 1453 ?", options: ["La guerre de Cent Ans", "La guerre de Trente Ans", "La guerre de Sept Ans"], correct: 0 },
+  { q: "Quel événement tragique se produit à Paris dans la nuit du 23 au 24 août 1572 ?", options: ["Le massacre de la Saint-Barthélemy", "La prise de la Bastille", "Le sacre de Charlemagne"], correct: 0 },
+  { q: "Quel ministre réforme les finances et l'économie sous Louis XIV ?", options: ["Colbert", "Necker", "Sully"], correct: 0 },
+  { q: "Quel roi fait construire la Sainte-Chapelle à Paris ?", options: ["Saint Louis (Louis IX)", "Philippe Auguste", "Louis XIV"], correct: 0 },
+  { q: "Quelle épidémie ravage la France et l'Europe au milieu du XIVe siècle ?", options: ["La peste noire", "Le choléra", "La grippe espagnole"], correct: 0 },
+  { q: "Qui est le cardinal principal ministre de Louis XIII ?", options: ["Richelieu", "Mazarin", "Fleury"], correct: 0 },
+  { q: "Quel roi de France meurt accidentellement lors d'un tournoi en 1559 ?", options: ["Henri II", "François Ier", "Charles IX"], correct: 0 },
 ];
+
+  const SOVEREIGN_QUESTIONS = {
+  'Clovis Ier': [
+    { q: "Vers quelle année Clovis a-t-il été baptisé à Reims ?", options: ["496", "800", "987"], correct: 0 },
+    { q: "Quelle bataille Clovis remporte-t-il contre les Alamans, motivant sa conversion selon la légende ?", options: ["Tolbiac", "Bouvines", "Poitiers"], correct: 0 },
+  ],
+  'Charlemagne': [
+    { q: "Quelle ville Charlemagne choisit-il comme capitale de son empire ?", options: ["Aix-la-Chapelle", "Paris", "Reims"], correct: 0 },
+    { q: "Comment appelle-t-on l'essor culturel et intellectuel encouragé par Charlemagne ?", options: ["La renaissance carolingienne", "Le siècle des Lumières", "L'âge d'or capétien"], correct: 0 },
+  ],
+  'Hugues Capet': [
+    { q: "Quel dernier roi carolingien Hugues Capet succède-t-il en 987 ?", options: ["Louis V le Fainéant", "Charles III le Simple", "Louis IV d'Outremer"], correct: 0 },
+  ],
+  'Philippe II Auguste': [
+    { q: "En quelle année Philippe Auguste remporte-t-il la bataille de Bouvines ?", options: ["1214", "1180", "1300"], correct: 0 },
+    { q: "Quelle forteresse parisienne Philippe Auguste fait-il construire ?", options: ["Le Louvre", "La Bastille", "Le Palais-Royal"], correct: 0 },
+  ],
+  'Louis IX (Saint Louis)': [
+    { q: "Lors de quelle croisade Saint Louis meurt-il, en 1270 ?", options: ["La huitième croisade, à Tunis", "La première croisade", "La croisade des Albigeois"], correct: 0 },
+    { q: "En quelle année Saint Louis est-il canonisé par le pape ?", options: ["1297", "1270", "1226"], correct: 0 },
+  ],
+  'Philippe IV le Bel': [
+    { q: "En quelle année Philippe le Bel fait-il arrêter les Templiers ?", options: ["1307", "1214", "1328"], correct: 0 },
+    { q: "Quelle ville devient le siège de la papauté sous son influence ?", options: ["Avignon", "Rome", "Reims"], correct: 0 },
+  ],
+  'Charles VII le Victorieux': [
+    { q: "Dans quelle ville Charles VII est-il sacré grâce à Jeanne d'Arc, en 1429 ?", options: ["Reims", "Paris", "Orléans"], correct: 0 },
+  ],
+  'Louis XI': [
+    { q: "Quel surnom donne-t-on à Louis XI pour son habileté diplomatique retorse ?", options: ["L'universelle araignée", "Le Roi-Soleil", "Le Bien-Aimé"], correct: 0 },
+  ],
+  'Francois Ier': [
+    { q: "Quel établissement d'enseignement François Ier fonde-t-il en 1530 ?", options: ["Le Collège de France", "La Sorbonne", "Saint-Cyr"], correct: 0 },
+    { q: "Comment s'appelle la rencontre faste entre François Ier et Henri VIII d'Angleterre en 1520 ?", options: ["Le Camp du Drap d'Or", "Le Traité de Verdun", "Les États Généraux"], correct: 0 },
+  ],
+  'Henri IV': [
+    { q: "Quelle phrase Henri IV aurait-il prononcée en se convertissant au catholicisme ?", options: ["Paris vaut bien une messe", "L'État, c'est moi", "Après moi, le déluge"], correct: 0 },
+    { q: "Quel plat Henri IV souhaitait-il voir sur la table de chaque paysan le dimanche ?", options: ["Une poule au pot", "Un gigot d'agneau", "Une tourte de gibier"], correct: 0 },
+  ],
+  'Louis XIV': [
+    { q: "En quelle année la cour s'installe-t-elle définitivement à Versailles ?", options: ["1682", "1643", "1715"], correct: 0 },
+    { q: "Quel édit Louis XIV révoque-t-il en 1685, retirant leurs droits aux protestants ?", options: ["L'édit de Nantes", "L'édit de Fontainebleau", "L'édit de tolérance"], correct: 0 },
+  ],
+  'Louis XVI': [
+    { q: "Quel pays Louis XVI soutient-il militairement contre les Britanniques en 1778 ?", options: ["Les insurgés américains", "L'Espagne", "La Prusse"], correct: 0 },
+    { q: "Comment s'appelle la tentative de fuite ratée de la famille royale en 1791 ?", options: ["La fuite à Varennes", "La Fronde", "La Terreur"], correct: 0 },
+  ],
+};
 
 // --- Config par action : quelle jauge, quels gains, quels textes ---
 const actionConfig = {
@@ -977,12 +1070,32 @@ function shuffleOptions(question) {
     correct: indices.indexOf(question.correct),
   };
 }
+
+const usedSpecificQuestions = {};
+
+function pickTeachQuestion() {
+  const sovereign = getCurrentSovereign();
+  const specific = SOVEREIGN_QUESTIONS[sovereign.name];
+  if (specific && specific.length > 0) {
+    if (!usedSpecificQuestions[sovereign.name]) usedSpecificQuestions[sovereign.name] = [];
+    const usedList = usedSpecificQuestions[sovereign.name];
+    if (usedList.length < specific.length) {
+      let idx;
+      do { idx = Math.floor(Math.random() * specific.length); } while (usedList.includes(idx));
+      usedList.push(idx);
+      return specific[idx];
+    }
+  }
+  return pickQuestion('teach');
+}
   
 function startQuiz(type) {
   if (gameOver) return;
   currentAction = type;
   const cfg = actionConfig[type];
-  const question = shuffleOptions(pickQuestion(type));
+  const question = type === 'teach'
+    ? shuffleOptions(pickTeachQuestion())
+    : shuffleOptions(pickQuestion(type));
 
   document.getElementById('quizEyebrow').textContent = cfg.eyebrow;
   const qEl = document.getElementById('quizQuestion');
@@ -1019,7 +1132,7 @@ function answerQuiz(chosen, correct, btnEl, optsEl) {
   } else {
     btnEl.classList.add('wrong');
     optsEl.children[correct].classList.add('correct');
-    feedbackEl.textContent = cfg.wrongLine;
+    feedbackEl.textContent = cfg.wrongLine + ` (-${GAME.WRONG_ANSWER_SAVOIR_PENALTY} Savoir)`;
     pendingCorrect = false;
   }
   continueBtn.classList.add('visible');
@@ -1273,6 +1386,7 @@ window.jumpTo = function(target) {
   document.getElementById('crown').classList.remove('visible');
   document.getElementById('pageBody').style.background = ORIGINAL_BG;
   setButtonsDisabled(false);
+  loadProgress();
   updateSovereignHeader();
   updateTurnCounter();
   updateBars();
