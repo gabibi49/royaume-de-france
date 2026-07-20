@@ -696,6 +696,7 @@ const GAME = {
   FAIL_GAIN: 8,                   // gain de jauge sur quiz raté (le dauphin progresse un peu quand même)
   ROYAUME_ON_QUIZ_SUCCESS: 5,     // le Royaume ne monte QUE sur bonne réponse, jamais sur mauvaise
   REST_BONHEUR_GAIN: 8,
+  WRONG_ANSWER_SAVOIR_PENALTY: 5,  // toute mauvaise réponse entame le Savoir, même sur Nourrir/Jouer
   REST_FAIM_GAIN: 5,
   ACTIONS_PER_TURN: 3,             // nombre d'actions avant que la décroissance par tour se déclenche
 };
@@ -1028,8 +1029,16 @@ function closeQuiz() {
   document.getElementById('quizOverlay').classList.remove('open');
   const cfg = actionConfig[currentAction];
 
-  stats[cfg.stat] = clamp(stats[cfg.stat] + (pendingCorrect ? cfg.successGain : cfg.failGain));
-  royaume = clamp(royaume + (pendingCorrect ? cfg.royaumeSuccess : cfg.royaumeFail));
+  if (pendingCorrect) {
+    stats[cfg.stat] = clamp(stats[cfg.stat] + cfg.successGain);
+    royaume = clamp(royaume + cfg.royaumeSuccess);
+  } else {
+    if (cfg.stat !== 'savoir') {
+      stats[cfg.stat] = clamp(stats[cfg.stat] + cfg.failGain);
+    }
+    stats.savoir = clamp(stats.savoir - GAME.WRONG_ANSWER_SAVOIR_PENALTY);
+    royaume = clamp(royaume + cfg.royaumeFail);
+  }
 
   if (cfg.move) moveCharacter();
   updateBars();
@@ -1110,7 +1119,7 @@ function checkEndStates() {
   if (stats.bonheur <= 0) { endRun('bonheur'); return; }
   if (stats.savoir <= 0) { endRun('savoir'); return; }
   if (royaume <= 0) { endRun('royaume'); return; }
-  if (stats.savoir >= 100) { endRun('victory'); }
+  if (stats.savoir >= 100 && stats.faim >= 75 && stats.bonheur >= 80) { endRun('victory'); }
 }
 
 function endRun(cause) {
