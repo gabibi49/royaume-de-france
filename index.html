@@ -259,6 +259,14 @@
 
   .royaume-row .stat-bar-fill {
     background: linear-gradient(90deg, #3a5a8a, var(--gold-light));
+    .royaume-hint {
+    font-size: 0.68rem;
+    font-style: italic;
+    color: var(--parchment-dark);
+    text-align: center;
+    margin: -6px 0 8px;
+    opacity: 0.75;
+  }
   }
 
 .turn-counter {
@@ -610,11 +618,12 @@
       <div class="stat-label">⚜️ Royaume</div>
       <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-royaume" style="width:10%"></div></div>
     </div>
+    <p class="royaume-hint">Ne monte que sur bonne réponse, jauge florissante (&gt;80), ou événement favorable.</p>
   </div>
 
 
   <div class="turn-counter" id="turnCounter">
-    <span class="turn-label">Prochaine saison :</span>
+    <span class="turn-label">Prochaine journée :</span>
     <span class="turn-dot" id="turnDot0"></span>
     <span class="turn-dot" id="turnDot1"></span>
     <span class="turn-dot" id="turnDot2"></span>
@@ -1000,7 +1009,7 @@ function answerQuiz(chosen, correct, btnEl, optsEl) {
   const cfg = actionConfig[currentAction];
   if (chosen === correct) {
     btnEl.classList.add('correct');
-    feedbackEl.textContent = cfg.correctLine;
+    feedbackEl.textContent = cfg.correctLine + (cfg.royaumeSuccess > 0 ? ` (+${cfg.royaumeSuccess} Royaume)` : '');
     pendingCorrect = true;
   } else {
     btnEl.classList.add('wrong');
@@ -1208,26 +1217,56 @@ function updateTurnCounter() {
 }
 
 function applyTurnDecay() {
-  const difficulty = 1 + Math.floor(sovereignIndex / 5) * GAME.DIFFICULTY_STEP;
+  const sovereign = getCurrentSovereign();
+  const difficulty = 1 + sovereign.era * GAME.DIFFICULTY_STEP; // dynastie plus tardive = plus exigeante
   stats.faim = clamp(stats.faim - Math.round(GAME.DECAY_FAIM * difficulty));
   stats.bonheur = clamp(stats.bonheur - Math.round(GAME.DECAY_BONHEUR * difficulty));
   stats.savoir = clamp(stats.savoir - Math.round(GAME.DECAY_SAVOIR * difficulty));
   royaume = clamp(royaume - Math.round(GAME.DECAY_ROYAUME * difficulty));
 
-  // Le Royaume est une récompense, pas un gain automatique : un royaume prospère
-  // (jauges au-dessus du seuil) grignote un peu de terrain à chaque tour.
   const prosperousStats = ['faim', 'bonheur', 'savoir'].filter(k => stats[k] > GAME.PROSPERITY_THRESHOLD).length;
+  let prosperityGain = 0;
   if (prosperousStats > 0) {
-    royaume = clamp(royaume + prosperousStats * GAME.PROSPERITY_ROYAUME_BONUS);
+    prosperityGain = prosperousStats * GAME.PROSPERITY_ROYAUME_BONUS;
+    royaume = clamp(royaume + prosperityGain);
   }
 
   const eventFired = maybeTriggerEvent();
-  if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
+  if (!eventFired && prosperityGain > 0) {
+    setChronicle(`Le royaume prospère sous votre gouverne (+${prosperityGain} Royaume).`);
+  } else if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
     setChronicle("Le dauphin semble contrarié. Occupez-vous de lui.");
   }
   updateBars();
 }
+  
+// Outil de test : ouvrir la console du navigateur (F12) et taper jumpTo("Louis XIV")
+// ou jumpTo(43) pour sauter directement à un souverain par nom ou par index.
+window.jumpTo = function(target) {
+  let index;
+  if (typeof target === 'number') {
+    index = target;
+  } else {
+    index = SOVEREIGNS.findIndex(s => s.name.toLowerCase().includes(String(target).toLowerCase()));
+    if (index === -1) { console.log('Souverain introuvable :', target); return; }
+  }
+  sovereignIndex = index;
+  stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
+  royaume = GAME.START_ROYAUME;
+  isKing = false;
+  gameOver = false;
+  actionCount = 0;
+  document.getElementById('character').classList.remove('is-king');
+  document.getElementById('crown').classList.remove('visible');
+  document.getElementById('pageBody').style.background = ORIGINAL_BG;
+  setButtonsDisabled(false);
+  updateSovereignHeader();
+  updateTurnCounter();
+  updateBars();
+  console.log('Sauté à :', getCurrentSovereign().name, '(era', getCurrentSovereign().era + ')');
+};
 
+  
 updateSovereignHeader();
 updateBars();
 </script>
