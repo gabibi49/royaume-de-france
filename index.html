@@ -718,7 +718,10 @@ const SAVE_KEY = 'petitDauphinSave';
 
 function saveProgress() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ sovereignIndex, prestige, galleryLog, proceduralCounters }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      sovereignIndex, prestige, galleryLog, proceduralCounters,
+      stats, royaume, actionCount
+    }));
   } catch (e) { /* stockage indisponible, on continue sans sauvegarder */ }
 }
 
@@ -731,6 +734,9 @@ function loadProgress() {
     prestige = saved.prestige || 0;
     if (Array.isArray(saved.galleryLog)) galleryLog.push(...saved.galleryLog);
     if (saved.proceduralCounters) Object.assign(proceduralCounters, saved.proceduralCounters);
+    if (saved.stats) stats = saved.stats;
+    if (typeof saved.royaume === 'number') royaume = saved.royaume;
+    if (typeof saved.actionCount === 'number') actionCount = saved.actionCount;
   } catch (e) { /* sauvegarde corrompue ou absente, on repart de zéro */ }
 }
 
@@ -1046,6 +1052,7 @@ function updateBars() {
 
   updateFlag();
   checkEndStates();
+  saveProgress();
 }
 
 // --- Quiz générique, partagé par nourrir / jouer / instruire ---
@@ -1394,7 +1401,9 @@ window.jumpTo = function(target) {
 };
 
   
+loadProgress();
 updateSovereignHeader();
+updateTurnCounter();
 updateBars();
 </script>
 
