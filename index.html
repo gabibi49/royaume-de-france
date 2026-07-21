@@ -628,7 +628,7 @@
   </div>
 
 
-  <div class="turn-counter" id="turnCounter">
+  <div class="turn-counter" id="turnCounter" title="Après 3 actions, une nouvelle journée commence : les jauges diminuent un peu, et un événement peut survenir.">
     <span class="turn-label">Prochaine journée :</span>
     <span class="turn-dot" id="turnDot0"></span>
     <span class="turn-dot" id="turnDot1"></span>
@@ -637,10 +637,10 @@
 
 
   <div class="actions">
-    <button class="seal-btn" id="btn-feed" onclick="startQuiz('feed')"><span class="icon">🍞</span>Nourrir</button>
-    <button class="seal-btn" id="btn-play" onclick="startQuiz('play')"><span class="icon">🎭</span>Jouer</button>
-    <button class="seal-btn" id="btn-teach" onclick="startQuiz('teach')"><span class="icon">📜</span>Instruire</button>
-    <button class="seal-btn" id="btn-rest" onclick="rest()"><span class="icon">🛏️</span>Coucher</button>
+    <button class="seal-btn" id="btn-feed" onclick="startQuiz('feed')" title="Bonne réponse : +20 Faim, +5 Royaume. Mauvaise réponse : +8 Faim, mais -5 Savoir."><span class="icon">🍞</span>Nourrir</button>
+    <button class="seal-btn" id="btn-play" onclick="startQuiz('play')" title="Bonne réponse : +20 Bonheur, +5 Royaume. Mauvaise réponse : +8 Bonheur, mais -5 Savoir."><span class="icon">🎭</span>Jouer</button>
+    <button class="seal-btn" id="btn-teach" onclick="startQuiz('teach')" title="Bonne réponse : +25 Savoir, +5 Royaume. Mauvaise réponse : -5 Savoir."><span class="icon">📜</span>Instruire</button>
+    <button class="seal-btn" id="btn-rest" onclick="rest()" title="+8 Bonheur, +5 Faim. Pas de quiz, aucun risque."><span class="icon">🛏️</span>Coucher</button>
   </div>
 
   <div class="chronicle" id="chronicle">Bienvenue à la cour. Le petit dauphin vous observe.</div>
@@ -679,7 +679,8 @@
 // --- Constantes de configuration : tout ce qui est "réglable" est ici ---
 const GAME = {
   DECAY_INTERVAL_MS: 4000,        // rythme de la routine du dauphin
-  EVENT_CHANCE: 0.22,             // probabilité d'un événement aléatoire à chaque cycle
+  EVENT_CHANCE: 0.22,             // probabilité d'un événement aléatoire à la décroissance de tour (tous les 3 actions)
+  EVENT_CHANCE_PER_ACTION: 0.08,  // probabilité plus faible qu'un événement survienne entre deux tours, à chaque action
   DIFFICULTY_STEP: 0.2,           // +20% de décroissance par génération
   CORONATION_DELAY_MS: 1700,      // pause avant l'écran de couronnement, pour laisser voir l'effet
   START_FAIM: 70,
@@ -880,13 +881,17 @@ function flashChronicle() {
   setTimeout(() => el.classList.remove('event-flash'), 1300);
 }
 
-function maybeTriggerEvent() {
-  if (Math.random() > GAME.EVENT_CHANCE) return false;
+function triggerRandomEvent() {
   const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
   applyEventEffect(event.stat, event.amount);
   if (event.extra) applyEventEffect(event.extra.stat, event.extra.amount);
   setChronicle(event.line);
   flashChronicle();
+}
+
+function maybeTriggerEvent() {
+  if (Math.random() > GAME.EVENT_CHANCE) return false;
+  triggerRandomEvent();
   return true;
 }
 
@@ -1182,12 +1187,35 @@ function rest() {
 
 // --- Fins de partie ---
 const endContent = {
-  faim: { emoji: '💀', title: 'Mort de faim', message: "Le dauphin, affamé, n'a pas survécu à l'hiver. Le royaume est en deuil." },
-  bonheur: { emoji: '💔', title: 'Mort de tristesse', message: "Privé de joie, le dauphin s'est éteint de chagrin, seul dans ses appartements." },
-  savoir: { emoji: '🥴', title: 'Le dauphin sombre dans la folie', message: "Livré à lui-même, sans précepteur, son esprit s'est égaré. Il erre dans les couloirs du château." },
-  royaume: { emoji: '⚔️', title: 'La Fronde a triomphé', message: "Négligé, le royaume s'est soulevé. Les nobles ont pris le pouvoir. Le dauphin est déchu." },
-  victory: { emoji: '👑', title: 'Couronnement', message: "Le dauphin achève sa formation et est jugé digne de régner. Une nouvelle page de la lignée s'écrit.", chronicle: '👑 Vive le Roi ! Sa formation est achevée.' },
+  faim: { emoji: '💀', title: 'Mort de faim', messages: [
+    "Le dauphin, affamé, n'a pas survécu à l'hiver. Le royaume est en deuil.",
+    "Les greniers étaient vides depuis trop longtemps. Le dauphin s'est éteint.",
+    "Faute de pain, le petit dauphin n'a pas tenu jusqu'au printemps.",
+  ] },
+  bonheur: { emoji: '💔', title: 'Mort de tristesse', messages: [
+    "Privé de joie, le dauphin s'est éteint de chagrin, seul dans ses appartements.",
+    "Sans un seul instant de bonheur, le cœur du dauphin a fini par se briser.",
+    "La mélancolie a eu raison du petit dauphin, oublié dans son ennui.",
+  ] },
+  savoir: { emoji: '🥴', title: 'Le dauphin sombre dans la folie', messages: [
+    "Livré à lui-même, sans précepteur, son esprit s'est égaré. Il erre dans les couloirs du château.",
+    "Faute d'instruction, le dauphin a perdu pied avec la raison.",
+    "Sans leçons, l'esprit du dauphin s'est effrité peu à peu.",
+  ] },
+  royaume: { emoji: '⚔️', title: 'La Fronde a triomphé', messages: [
+    "Négligé, le royaume s'est soulevé. Les nobles ont pris le pouvoir. Le dauphin est déchu.",
+    "La couronne a vacillé trop longtemps. La Fronde a fini par l'emporter.",
+    "Faute d'autorité, les grands seigneurs ont pris le contrôle du royaume.",
+  ] },
+  victory: { emoji: '👑', title: 'Couronnement', messages: [
+    "Le dauphin achève sa formation et est jugé digne de régner. Une nouvelle page de la lignée s'écrit.",
+  ], chronicle: '👑 Vive le Roi ! Sa formation est achevée.' },
 };
+
+function pickEndMessage(cause) {
+  const msgs = endContent[cause].messages;
+  return msgs[Math.floor(Math.random() * msgs.length)];
+}
 
 function applyEraDecor() {
   const sovereign = getCurrentSovereign();
@@ -1285,7 +1313,7 @@ function showEndScreen(cause, sovereign, finalScore, prestigeGain) {
 
   document.getElementById('endEmoji').textContent = content.emoji;
   document.getElementById('endTitle').textContent = cause === 'victory' ? 'Couronnement de ' + sovereign.name : content.title;
-  document.getElementById('endMessage').textContent = content.message;
+  document.getElementById('endMessage').textContent = pickEndMessage(cause);
 
   const compareEl = document.getElementById('scoreCompare');
   if (sovereign.score !== null) {
@@ -1345,6 +1373,10 @@ function registerAction() {
     actionCount = 0;
     updateTurnCounter();
     applyTurnDecay();
+  } else if (Math.random() < GAME.EVENT_CHANCE_PER_ACTION) {
+    // Un événement peut aussi survenir entre deux journées, pas seulement à la décroissance de tour.
+    triggerRandomEvent();
+    updateBars();
   }
 }
 
