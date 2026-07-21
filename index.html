@@ -28,9 +28,10 @@
     color: var(--parchment);
     min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 24px;
+    overflow-y: auto;
     transition: background 1.8s ease;
   }
 
@@ -356,11 +357,13 @@
     inset: 0;
     background: rgba(16, 27, 50, 0.75);
     display: none;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
     z-index: 10;
   }
+  
   .modal-overlay.open { display: flex; }
 
   .quiz-box, .end-box {
