@@ -494,6 +494,7 @@
     <div class="prestige-row">
       <span id="prestigeValue">⚜️ Prestige : 0</span>
       <button class="gallery-btn" onclick="openGallery()">📜 Galerie des Rois</button>
+      <button class="gallery-btn" onclick="manualSave()">💾 Sauvegarder</button>
     </div>
   </div>
 
@@ -724,7 +725,12 @@ function saveProgress() {
     }));
   } catch (e) { /* stockage indisponible, on continue sans sauvegarder */ }
 }
-
+  
+function manualSave() {
+  saveProgress();
+  setChronicle('💾 Partie sauvegardée.');
+  flashChronicle();
+}
 function loadProgress() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
