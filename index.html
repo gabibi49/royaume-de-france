@@ -700,7 +700,7 @@ const GAME = {
   START_BONHEUR: 70,
   START_SAVOIR: 20,
   START_ROYAUME: 10,
-  PROSPERITY_THRESHOLD: 80,       // au-delà de cette valeur, une jauge est jugée "florissante"
+  PROSPERITY_THRESHOLD: 90,       // relevé (était 80) : il fallait beaucoup trop peu d'effort pour l'atteindre
   PROSPERITY_ROYAUME_BONUS: 1,    // gain de Royaume par jauge florissante à chaque cycle
   DECAY_FAIM: 3,
   DECAY_BONHEUR: 2,
@@ -1415,8 +1415,8 @@ function applyTurnDecay() {
 
   const prosperousStats = ['faim', 'bonheur', 'savoir'].filter(k => stats[k] > GAME.PROSPERITY_THRESHOLD).length;
   let prosperityGain = 0;
-  if (prosperousStats > 0) {
-    prosperityGain = prosperousStats * GAME.PROSPERITY_ROYAUME_BONUS;
+  if (prosperousStats === 3) {
+    prosperityGain = GAME.PROSPERITY_ROYAUME_BONUS;
     royaume = clamp(royaume + prosperityGain);
   }
 
