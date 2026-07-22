@@ -709,7 +709,8 @@ const GAME = {
   FEED_PLAY_GAIN: 20,             // gain de jauge sur quiz réussi (nourrir / jouer)
   TEACH_GAIN: 25,                 // gain de jauge sur quiz réussi (instruire)
   FAIL_GAIN: 8,                   // gain de jauge sur quiz raté (le dauphin progresse un peu quand même)
-  ROYAUME_ON_QUIZ_SUCCESS: 2,     // le Royaume ne monte QUE sur bonne réponse, jamais sur mauvaise
+  ROYAUME_ON_QUIZ_SUCCESS: 2,     // réduit (était 5) : trop élevé, rendait la chute à 0 quasi impossible
+  ROYAUME_ON_QUIZ_FAIL: -2,       // nouveau : une mauvaise réponse coûte aussi de l'Autorité, pas seulement du Savoir
   REST_BONHEUR_GAIN: 8,
   WRONG_ANSWER_SAVOIR_PENALTY: 5,  // toute mauvaise réponse entame le Savoir, même sur Nourrir/Jouer
   REST_FAIM_GAIN: 5,
@@ -1012,7 +1013,7 @@ const actionConfig = {
   feed: {
     eyebrow: "Le repas royal", bank: feedBank, stat: 'faim',
     successGain: GAME.FEED_PLAY_GAIN, failGain: GAME.FAIL_GAIN,
-    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: 0,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: GAME.ROYAUME_ON_QUIZ_FAIL,
     correctLine: "Le dauphin savoure un repas digne de son rang.",
     wrongLine: "Le repas n'était pas tout à fait d'époque... mais il a mangé.",
     move: true,
@@ -1020,7 +1021,7 @@ const actionConfig = {
   play: {
     eyebrow: "Le temps du loisir", bank: playBank, stat: 'bonheur',
     successGain: GAME.FEED_PLAY_GAIN, failGain: GAME.FAIL_GAIN,
-    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: 0,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: GAME.ROYAUME_ON_QUIZ_FAIL,
     correctLine: "Le dauphin s'est diverti comme il se doit à la cour.",
     wrongLine: "Le jeu choisi n'existait pas encore... mais il s'est amusé quand même.",
     move: true,
@@ -1028,7 +1029,7 @@ const actionConfig = {
   teach: {
     eyebrow: "Leçon du précepteur", bank: teachBank, stat: 'savoir',
     successGain: GAME.TEACH_GAIN, failGain: GAME.FAIL_GAIN,
-    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: 0,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: GAME.ROYAUME_ON_QUIZ_FAIL,
     correctLine: "Bien répondu ! Le dauphin retient sa leçon.",
     wrongLine: "Pas tout à fait... mais il progresse un peu quand même.",
     move: false,
