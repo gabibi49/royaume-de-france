@@ -789,7 +789,7 @@ function saveProgress() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       sovereignIndex, prestige, ecus, galleryLog, proceduralCounters,
-      stats, royaume, actionCount
+      stats, royaume, actionCount, ownedItems: Array.from(ownedItems)
     }));
   } catch (e) { /* stockage indisponible, on continue sans sauvegarder */ }
 }
@@ -812,6 +812,8 @@ function loadProgress() {
     if (saved.stats) stats = saved.stats;
     if (typeof saved.royaume === 'number') royaume = saved.royaume;
     if (typeof saved.actionCount === 'number') actionCount = saved.actionCount;
+    if (Array.isArray(saved.ownedItems)) ownedItems = new Set(saved.ownedItems);
+    recomputeBonuses();
   } catch (e) { /* sauvegarde corrompue ou absente, on repart de zéro */ }
 }
 
@@ -1095,6 +1097,111 @@ const usedQuestions = { feed: [], play: [], teach: [] };
 let currentAction = null;
 let pendingCorrect = false;
 
+const SHOP_ITEMS = [
+  { id: 'cour_joyeuse', name: 'Cour joyeuse', icon: '🎭', cost: 3,
+    description: '+10 Bonheur de départ à chaque nouveau règne.',
+    effect: { type: 'startStat', stat: 'bonheur', amount: 10 } },
+  { id: 'grenier_royal', name: 'Grenier royal', icon: '🌾', cost: 10,
+    description: '+10 Faim de départ à chaque nouveau règne.',
+    effect: { type: 'startStat', stat: 'faim', amount: 10 } },
+  { id: 'garde_royale', name: 'Garde royale', icon: '🛡️', cost: 12,
+    description: "+10 Autorité de départ à chaque nouveau règne.",
+    effect: { type: 'startRoyaume', amount: 10 } },
+  { id: 'precepteur_particulier', name: 'Précepteur particulier', icon: '📖', cost: 15,
+    description: '+10 Savoir de départ à chaque nouveau règne.',
+    effect: { type: 'startStat', stat: 'savoir', amount: 10 } },
+  { id: 'conseiller_clement', name: 'Conseiller clément', icon: '🕊️', cost: 25,
+    description: 'Réduit de 2 la pénalité de Savoir infligée par une mauvaise réponse.',
+    effect: { type: 'savoirPenaltyReduction', amount: 2 } },
+  { id: 'tresorier_habile', name: 'Trésorier habile', icon: '💰', cost: 30,
+    description: '+1 Autorité supplémentaire à chaque bonne réponse.',
+    effect: { type: 'royaumeGainBonus', amount: 1 } },
+];
+
+let ownedItems = new Set();
+
+const bonuses = {
+  startFaim: 0, startBonheur: 0, startSavoir: 0, startRoyaume: 0,
+  savoirPenaltyReduction: 0, royaumeGainBonus: 0,
+};
+
+function recomputeBonuses() {
+  bonuses.startFaim = 0;
+  bonuses.startBonheur = 0;
+  bonuses.startSavoir = 0;
+  bonuses.startRoyaume = 0;
+  bonuses.savoirPenaltyReduction = 0;
+  bonuses.royaumeGainBonus = 0;
+  for (const item of SHOP_ITEMS) {
+    if (!ownedItems.has(item.id)) continue;
+    const e = item.effect;
+    if (e.type === 'startStat' && e.stat === 'faim') bonuses.startFaim += e.amount;
+    else if (e.type === 'startStat' && e.stat === 'bonheur') bonuses.startBonheur += e.amount;
+    else if (e.type === 'startStat' && e.stat === 'savoir') bonuses.startSavoir += e.amount;
+    else if (e.type === 'startRoyaume') bonuses.startRoyaume += e.amount;
+    else if (e.type === 'savoirPenaltyReduction') bonuses.savoirPenaltyReduction += e.amount;
+    else if (e.type === 'royaumeGainBonus') bonuses.royaumeGainBonus += e.amount;
+  }
+}
+
+function freshStats() {
+  return {
+    faim: clamp(GAME.START_FAIM + bonuses.startFaim),
+    bonheur: clamp(GAME.START_BONHEUR + bonuses.startBonheur),
+    savoir: clamp(GAME.START_SAVOIR + bonuses.startSavoir),
+  };
+}
+
+function freshRoyaume() {
+  return clamp(GAME.START_ROYAUME + bonuses.startRoyaume);
+}
+
+function buyItem(id) {
+  const item = SHOP_ITEMS.find(i => i.id === id);
+  if (!item || ownedItems.has(id)) return;
+  if (ecus < item.cost) {
+    setChronicle("Pas assez d'Écus pour acheter " + item.name + ".");
+    flashChronicle();
+    return;
+  }
+  ecus -= item.cost;
+  ownedItems.add(id);
+  recomputeBonuses();
+  saveProgress();
+  document.getElementById('ecusValue').textContent = '🪙 Écus : ' + ecus;
+  setChronicle(item.name + ' rejoint votre trésor royal !');
+  flashChronicle();
+  renderShop();
+}
+
+function renderShop() {
+  const listEl = document.getElementById('shopList');
+  listEl.innerHTML = SHOP_ITEMS.map(item => {
+    const owned = ownedItems.has(item.id);
+    const affordable = ecus >= item.cost;
+    const btnLabel = owned ? 'Acquis' : (item.cost + ' 🪙');
+    const btnDisabled = owned || !affordable ? 'disabled' : '';
+    return `
+      <div class="shop-entry">
+        <div class="shop-entry-info">
+          <div class="shop-entry-name">${item.icon} ${item.name}</div>
+          <div class="shop-entry-desc">${item.description}</div>
+        </div>
+        <button class="shop-buy-btn" ${btnDisabled} onclick="buyItem('${item.id}')">${btnLabel}</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function openShop() {
+  renderShop();
+  document.getElementById('shopOverlay').classList.add('open');
+}
+
+function closeShop() {
+  document.getElementById('shopOverlay').classList.remove('open');
+}
+
 function clamp(v) { return Math.max(0, Math.min(100, v)); }
 
 function setChronicle(text) {
@@ -1231,12 +1338,12 @@ function closeQuiz() {
 
   if (pendingCorrect) {
     stats[cfg.stat] = clamp(stats[cfg.stat] + cfg.successGain);
-    royaume = clamp(royaume + cfg.royaumeSuccess);
+    royaume = clamp(royaume + cfg.royaumeSuccess + bonuses.royaumeGainBonus);
   } else {
     if (cfg.stat !== 'savoir') {
       stats[cfg.stat] = clamp(stats[cfg.stat] + cfg.failGain);
     }
-    stats.savoir = clamp(stats.savoir - GAME.WRONG_ANSWER_SAVOIR_PENALTY);
+    stats.savoir = clamp(stats.savoir - Math.max(GAME.WRONG_ANSWER_SAVOIR_PENALTY - bonuses.savoirPenaltyReduction, 0));
     royaume = clamp(royaume + cfg.royaumeFail);
   }
 
@@ -1413,8 +1520,8 @@ function nextSovereign() {
   const wasLastNonRegnant = sovereignIndex === SOVEREIGNS.length - 1;
   sovereignIndex += 1;
 
-  stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
-  royaume = GAME.START_ROYAUME;
+  stats = freshStats();
+  royaume = freshRoyaume();
   isKing = false;
   gameOver = false;
   position = 40;
@@ -1498,8 +1605,8 @@ window.jumpTo = function(target) {
     if (index === -1) { console.log('Souverain introuvable :', target); return; }
   }
   sovereignIndex = index;
-  stats = { faim: GAME.START_FAIM, bonheur: GAME.START_BONHEUR, savoir: GAME.START_SAVOIR };
-  royaume = GAME.START_ROYAUME;
+  stats = freshStats();
+  royaume = freshRoyaume();
   isKing = false;
   gameOver = false;
   actionCount = 0;
@@ -1516,6 +1623,7 @@ window.jumpTo = function(target) {
 
   
 loadProgress();
+recomputeBonuses();
 updateSovereignHeader();
 updateTurnCounter();
 updateBars();
