@@ -482,6 +482,49 @@
   }
   .gallery-entry .g-name { font-weight: 600; }
   .gallery-entry .g-score { color: var(--burgundy); font-size: 0.8rem; }
+  .shop-list {
+    max-height: 340px;
+    overflow-y: auto;
+    text-align: left;
+    margin-top: 10px;
+  }
+  .shop-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid var(--gold);
+    padding: 10px 2px;
+  }
+  .shop-entry-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .shop-entry-desc {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: #555;
+    margin-top: 2px;
+  }
+  .shop-buy-btn {
+    flex-shrink: 0;
+    background: var(--royal-blue);
+    color: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .shop-buy-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    background: #999;
+    border-color: #777;
+    color: #eee;
+  }
   .gallery-close {
     display: block;
     margin: 14px auto 0;
@@ -506,7 +549,9 @@
     <p class="sovereign-meta" id="sovereignMeta">Destiné à devenir Clovis Ier — Royaume Mérovingien</p>
     <div class="prestige-row">
       <span id="prestigeValue" title="Prestige cumulé à travers toutes les générations jouées">⚜️ Prestige (Gloire de la lignée) : 0</span>
+      <span id="ecusValue" title="Monnaie dépensable dans la boutique">🪙 Écus : 0</span>
       <button class="gallery-btn" onclick="openGallery()">📜 Galerie des Rois</button>
+      <button class="gallery-btn" onclick="openShop()">🛒 Boutique</button>
       <button class="gallery-btn" onclick="manualSave()">💾 Sauvegarder</button>
     </div>
     <p class="prestige-estimate" id="prestigeEstimate">Prestige estimé en fin de règne : ~1</p>
@@ -689,6 +734,14 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="shopOverlay">
+  <div class="quiz-box">
+    <p class="quiz-eyebrow">Boutique du Trésor Royal</p>
+    <div class="shop-list" id="shopList"></div>
+    <button class="gallery-close" onclick="closeShop()">Fermer</button>
+  </div>
+</div>
+  
 <script>
 // --- Constantes de configuration : tout ce qui est "réglable" est ici ---
 const GAME = {
@@ -727,6 +780,7 @@ let position = 40;
 let actionCount = 0;
 let sovereignIndex = 0;
 let prestige = 0;
+let ecus = 0;
 const galleryLog = [];
 
 const SAVE_KEY = 'petitDauphinSave';
@@ -734,7 +788,7 @@ const SAVE_KEY = 'petitDauphinSave';
 function saveProgress() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      sovereignIndex, prestige, galleryLog, proceduralCounters,
+      sovereignIndex, prestige, ecus, galleryLog, proceduralCounters,
       stats, royaume, actionCount
     }));
   } catch (e) { /* stockage indisponible, on continue sans sauvegarder */ }
@@ -752,6 +806,7 @@ function loadProgress() {
     const saved = JSON.parse(raw);
     sovereignIndex = saved.sovereignIndex || 0;
     prestige = saved.prestige || 0;
+    ecus = saved.ecus || 0;
     if (Array.isArray(saved.galleryLog)) galleryLog.push(...saved.galleryLog);
     if (saved.proceduralCounters) Object.assign(proceduralCounters, saved.proceduralCounters);
     if (saved.stats) stats = saved.stats;
@@ -1254,6 +1309,7 @@ function updateSovereignHeader() {
   document.getElementById('sovereignMeta').textContent =
     'Destiné à devenir ' + sovereign.name + ' — ' + ERA_VISUALS[sovereign.era].label;
   document.getElementById('prestigeValue').textContent = '⚜️ Prestige (Gloire de la lignée) : ' + prestige;
+  document.getElementById('ecusValue').textContent = '🪙 Écus : ' + ecus;
   applyEraDecor();
 }
 
@@ -1303,6 +1359,7 @@ function endRun(cause) {
   const finalScore = computeScore();
   const prestigeGain = Math.max(Math.round(finalScore / 10), 1) + (cause === 'victory' ? 5 : 0);
   prestige += prestigeGain;
+  ecus += prestigeGain; // même formule que le Prestige pour l'instant, mais dépensable dans la boutique
 
   galleryLog.push({
     name: sovereign.name,
