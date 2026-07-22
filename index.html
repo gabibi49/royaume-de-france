@@ -692,7 +692,6 @@
 <script>
 // --- Constantes de configuration : tout ce qui est "réglable" est ici ---
 const GAME = {
-  DECAY_INTERVAL_MS: 4000,        // rythme de la routine du dauphin
   EVENT_CHANCE: 0.22,             // probabilité d'un événement aléatoire à la décroissance de tour (tous les 3 actions)
   EVENT_CHANCE_PER_ACTION: 0.08,  // probabilité plus faible qu'un événement survienne entre deux tours, à chaque action
   DIFFICULTY_STEP: 0.2,           // +20% de décroissance par génération
@@ -703,7 +702,6 @@ const GAME = {
   START_ROYAUME: 10,
   PROSPERITY_THRESHOLD: 80,       // au-delà de cette valeur, une jauge est jugée "florissante"
   PROSPERITY_ROYAUME_BONUS: 1,    // gain de Royaume par jauge florissante à chaque cycle
-  MAX_GENERATIONS: 5,
   DECAY_FAIM: 3,
   DECAY_BONHEUR: 2,
   DECAY_SAVOIR: 1,
@@ -711,7 +709,7 @@ const GAME = {
   FEED_PLAY_GAIN: 20,             // gain de jauge sur quiz réussi (nourrir / jouer)
   TEACH_GAIN: 25,                 // gain de jauge sur quiz réussi (instruire)
   FAIL_GAIN: 8,                   // gain de jauge sur quiz raté (le dauphin progresse un peu quand même)
-  ROYAUME_ON_QUIZ_SUCCESS: 5,     // le Royaume ne monte QUE sur bonne réponse, jamais sur mauvaise
+  ROYAUME_ON_QUIZ_SUCCESS: 2,     // le Royaume ne monte QUE sur bonne réponse, jamais sur mauvaise
   REST_BONHEUR_GAIN: 8,
   WRONG_ANSWER_SAVOIR_PENALTY: 5,  // toute mauvaise réponse entame le Savoir, même sur Nourrir/Jouer
   REST_FAIM_GAIN: 5,
