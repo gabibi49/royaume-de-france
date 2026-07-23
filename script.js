@@ -182,22 +182,122 @@ function getCurrentSovereign() {
 }
 
 // Événements aléatoires rares, en plus de la routine des 4 actions
-const randomEvents = [
-  { stat: 'bonheur', amount: -15, extra: { stat: 'royaume', amount: -8 },
-    line: "☠️ La peste frappe le royaume. Le peuple est terrifié et la cour s'inquiète." },
-  { stat: 'faim', amount: -20,
-    line: "🌾 Une disette frappe les campagnes. Les récoltes ont manqué." },
-  { stat: 'royaume', amount: 10, extra: { stat: 'savoir', amount: 5 },
-    line: "📯 Un ambassadeur étranger apporte des présents et de nouvelles idées à la cour." },
-  { stat: 'faim', amount: 15, extra: { stat: 'royaume', amount: 3 },
-    line: "🌻 Une récolte exceptionnelle remplit les greniers du royaume." },
-  { stat: 'royaume', amount: -10,
-    line: "🗡️ Un complot se trame parmi les nobles. La couronne vacille." },
+const choiceEvents = [
+  {
+    id: 'epidemie',
+    eras: [0, 1, 2, 3, 4],
+    title: "☠️ Une épidémie frappe le royaume",
+    description: "La maladie se répand dans les campagnes. Le peuple regarde vers vous.",
+    options: [
+      { label: "Fermer les portes de la ville", effects: { bonheur: -10, royaume: 6 },
+        outcome: "Vous isolez le royaume. La contagion ralentit, mais le peuple étouffe." },
+      { label: "Laisser circuler marchands et voyageurs", effects: { bonheur: 6, royaume: -8 },
+        outcome: "Le commerce continue, mais la maladie se propage plus vite." },
+    ],
+  },
+  {
+    id: 'recolte',
+    eras: [0, 1, 2, 3, 4],
+    title: "🌾 Une récolte abondante",
+    description: "Les greniers débordent. Faut-il en profiter tout de suite ou garder des réserves ?",
+    options: [
+      { label: "Distribuer au peuple sans attendre", effects: { bonheur: 12, royaume: 4, faim: -5 },
+        outcome: "La joie est immédiate, mais les réserves d'hiver s'amenuisent." },
+      { label: "Stocker pour l'hiver", effects: { faim: 15, bonheur: -4 },
+        outcome: "Vous assurez l'avenir, au prix d'un peu de grogne aujourd'hui." },
+    ],
+  },
+  {
+    id: 'ambassadeur',
+    eras: [0, 1, 2, 3, 4],
+    title: "📯 Un ambassadeur étranger se présente",
+    description: "Il propose une alliance et des présents, mais exige des concessions.",
+    options: [
+      { label: "Accepter l'alliance", effects: { royaume: 8, savoir: 6, bonheur: -3 },
+        outcome: "Le royaume gagne en influence, mais certains y voient une soumission." },
+      { label: "Refuser par prudence", effects: { bonheur: 4, royaume: -6 },
+        outcome: "Vous préservez votre indépendance, au prix d'une occasion manquée." },
+    ],
+  },
+  {
+    id: 'complot_nobles',
+    eras: [0, 1, 2, 3, 4],
+    title: "🗡️ Un complot se trame parmi les nobles",
+    description: "Des rumeurs de conjuration circulent à la cour. Comment réagir ?",
+    options: [
+      { label: "Faire un exemple sévère", effects: { royaume: 10, bonheur: -8 },
+        outcome: "La couronne s'affermit, mais la peur remplace le respect." },
+      { label: "Négocier et apaiser les tensions", effects: { bonheur: 8, royaume: -5 },
+        outcome: "Le calme revient, mais votre autorité en sort fragilisée." },
+    ],
+  },
+  {
+    id: 'hiver_rigoureux',
+    eras: [0, 1, 2, 3, 4],
+    title: "❄️ Un hiver rigoureux s'installe",
+    description: "Le froid frappe durement les plus démunis du royaume.",
+    options: [
+      { label: "Ouvrir les greniers royaux", effects: { faim: 10, bonheur: 8, royaume: -6 },
+        outcome: "Le peuple survit à l'hiver et vous en est reconnaissant." },
+      { label: "Préserver les réserves de la couronne", effects: { royaume: 6, faim: -8, bonheur: -8 },
+        outcome: "Les caisses du royaume restent pleines, mais l'hiver a été rude pour le peuple." },
+    ],
+  },
+  {
+    id: 'delegation_religieuse',
+    eras: [0, 1, 2, 3, 4],
+    title: "⛪ Une délégation religieuse demande audience",
+    description: "L'Église souhaite financer une nouvelle fondation grâce à vos deniers.",
+    options: [
+      { label: "Financer le projet", effects: { savoir: 8, royaume: 6, faim: -6 },
+        outcome: "Le rayonnement du royaume grandit, au prix de quelques sacrifices." },
+      { label: "Décliner poliment", effects: { faim: 6, royaume: -5, savoir: -4 },
+        outcome: "Vous préservez vos ressources, mais froissez une alliance précieuse." },
+    ],
+  },
 ];
 
-function applyEventEffect(key, amount) {
-  if (key === 'royaume') royaume = clamp(royaume + amount);
-  else stats[key] = clamp(stats[key] + amount);
+function pickChoiceEvent() {
+  const sovereign = getCurrentSovereign();
+  const pool = choiceEvents.filter(e => e.eras.includes(sovereign.era));
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function applyChoiceEffects(effects) {
+  for (const key of Object.keys(effects)) {
+    const amount = effects[key];
+    if (key === 'royaume') royaume = clamp(royaume + amount);
+    else stats[key] = clamp(stats[key] + amount);
+  }
+}
+
+let currentChoiceEvent = null;
+
+function openEventModal(event) {
+  document.getElementById('eventTitle').textContent = event.title;
+  document.getElementById('eventDescription').textContent = event.description;
+  const optsEl = document.getElementById('eventOptions');
+  optsEl.innerHTML = '';
+  event.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = opt.label;
+    btn.onclick = () => chooseEventOption(i);
+    optsEl.appendChild(btn);
+  });
+  document.getElementById('eventOverlay').classList.add('open');
+}
+
+function chooseEventOption(index) {
+  const opt = currentChoiceEvent.options[index];
+  applyChoiceEffects(opt.effects);
+  document.getElementById('eventOverlay').classList.remove('open');
+  setChronicle(opt.outcome);
+  flashChronicle();
+  currentChoiceEvent = null;
+  updateBars();
+  saveProgress();
 }
 
 function flashChronicle() {
@@ -206,17 +306,13 @@ function flashChronicle() {
   setTimeout(() => el.classList.remove('event-flash'), 1300);
 }
 
-function triggerRandomEvent() {
-  const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-  applyEventEffect(event.stat, event.amount);
-  if (event.extra) applyEventEffect(event.extra.stat, event.extra.amount);
-  setChronicle(event.line);
-  flashChronicle();
-}
-
-function maybeTriggerEvent() {
-  if (Math.random() > GAME.EVENT_CHANCE) return false;
-  triggerRandomEvent();
+function maybeTriggerChoiceEvent(chance) {
+  if (gameOver) return false;
+  if (Math.random() > chance) return false;
+  const event = pickChoiceEvent();
+  if (!event) return false;
+  currentChoiceEvent = event;
+  openEventModal(event);
   return true;
 }
 
@@ -811,10 +907,9 @@ function registerAction() {
     actionCount = 0;
     updateTurnCounter();
     applyTurnDecay();
-  } else if (Math.random() < GAME.EVENT_CHANCE_PER_ACTION) {
+  } else {
     // Un événement peut aussi survenir entre deux journées, pas seulement à la décroissance de tour.
-    triggerRandomEvent();
-    updateBars();
+    maybeTriggerChoiceEvent(GAME.EVENT_CHANCE_PER_ACTION);
   }
 }
 
@@ -840,7 +935,7 @@ function applyTurnDecay() {
     royaume = clamp(royaume + prosperityGain);
   }
 
-  const eventFired = maybeTriggerEvent();
+  const eventFired = maybeTriggerChoiceEvent(GAME.EVENT_CHANCE);
   if (!eventFired && prosperityGain > 0) {
     setChronicle(`Le royaume prospère sous votre gouverne (+${prosperityGain} Royaume).`);
   } else if (!eventFired && (stats.faim < 20 || stats.bonheur < 20)) {
