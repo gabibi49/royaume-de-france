@@ -1,1 +1,533 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --ink: #241c14;
+    --parchment: #f1e6cd;
+    --parchment-dark: #e2d3ab;
+    --royal-blue: #1b2a4a;
+    --royal-blue-deep: #101b32;
+    --gold: #c9a227;
+    --gold-light: #e8cf7a;
+    --burgundy: #6b2737;
+    --burgundy-light: #8a3648;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'EB Garamond', serif;
+    background: radial-gradient(ellipse at top, var(--royal-blue) 0%, var(--royal-blue-deep) 70%);
+    color: var(--parchment);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+    transition: background 1.8s ease;
+  }
+
+  .game {
+    width: 100%;
+    max-width: 460px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    font-size: 1.6rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    margin: 0 0 4px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  .subtitle {
+    text-align: center;
+    font-style: italic;
+    color: var(--parchment-dark);
+    margin: 0 0 20px;
+    font-size: 0.95rem;
+  }
+
+  .sovereign-header {
+    text-align: center;
+    margin: -14px 0 16px;
+  }
+  .sovereign-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    color: var(--gold-light);
+    margin: 0 0 2px;
+    letter-spacing: 0.03em;
+  }
+  .sovereign-meta {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--parchment-dark);
+    margin: 0 0 8px;
+    opacity: 0.9;
+  }
+  .prestige-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 0.78rem;
+  }
+  .gallery-btn {
+    background: transparent;
+    color: var(--gold-light);
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    padding: 3px 10px;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .gallery-btn:hover { background: rgba(201,162,39,0.15); }
+
+  .courtyard {
+    position: relative;
+    height: 220px;
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, #2d3f66 0%, #24365a 55%, #3a2e22 55%, #4a3a28 100%);
+    border: 3px solid var(--gold);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+
+  .courtyard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 40px);
+  }
+
+  /* Drapeau du royaume, réagit à l'état du royaume */
+  .flagpole {
+    position: absolute;
+    top: 10px;
+    right: 24px;
+    width: 3px;
+    height: 58px;
+    background: #3a2e22;
+    z-index: 2;
+  }
+
+  .flag-banner {
+    position: absolute;
+    top: 10px;
+    right: 24px;
+    width: 46px;
+    height: 32px;
+    transform-origin: left center;
+    animation: wave 2.2s ease-in-out infinite;
+    transition: filter 0.8s ease, opacity 0.8s ease;
+    z-index: 2;
+    filter: none;
+  }
+  .flag-banner svg { width: 100%; height: 100%; display: block; }
+
+  .flag-banner.crisis {
+    filter: grayscale(0.85) brightness(0.55);
+    opacity: 0.8;
+    animation-duration: 3.2s;
+  }
+  .flag-banner.glorious {
+    filter: drop-shadow(0 0 6px var(--gold-light));
+  }
+
+  .flag-era { display: none; }
+  .flag-banner.era-0 .flag-era-0,
+  .flag-banner.era-1 .flag-era-1,
+  .flag-banner.era-2 .flag-era-2,
+  .flag-banner.era-3 .flag-era-3,
+  .flag-banner.era-4 .flag-era-4 { display: block; }
+
+  @keyframes wave {
+    0%, 100% { transform: skewY(0deg) rotate(0deg); }
+    50% { transform: skewY(5deg) rotate(-1deg); }
+  }
+
+  .era-icon {
+    position: absolute;
+    top: 10px;
+    left: 16px;
+    font-size: 1.3rem;
+    opacity: 0.9;
+    z-index: 2;
+    transition: opacity 0.4s;
+  }
+
+  .character {
+    position: absolute;
+    bottom: 30px;
+    left: 40px;
+    width: 60px;
+    height: 90px;
+    transition: left 2.2s ease-in-out, transform 0.8s ease;
+    animation: bob 1.4s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .dauphin-svg { width: 100%; height: 100%; overflow: visible; display: block; }
+
+  .body-group, .headwear-group { display: none; }
+  .character.era-0 .body-0, .character.era-0 .headwear-0 { display: block; }
+  .character.era-1 .body-1, .character.era-1 .headwear-1 { display: block; }
+  .character.era-2 .body-2, .character.era-2 .headwear-2 { display: block; }
+  .character.era-3 .body-3, .character.era-3 .headwear-3 { display: block; }
+  .character.era-4 .body-4, .character.era-4 .headwear-4 { display: block; }
+
+  .character.is-king .body-group {
+    filter: drop-shadow(0 0 5px var(--gold-light));
+  }
+
+  .crown {
+    position: absolute;
+    top: -6px;
+    left: 15px;
+    width: 30px;
+    height: 12px;
+    opacity: 0;
+    transition: opacity 0.6s;
+    font-size: 18px;
+    text-align: center;
+    line-height: 1;
+    z-index: 3;
+  }
+  .crown.visible { opacity: 1; }
+
+  .mood {
+    position: absolute;
+    top: -22px;
+    left: 8px;
+    font-size: 1.1rem;
+    transition: opacity 0.3s;
+    z-index: 3;
+  }
+
+  .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat-label {
+    width: 90px;
+    font-size: 0.9rem;
+    color: var(--gold-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-bar-bg {
+    flex: 1;
+    height: 14px;
+    background: var(--royal-blue-deep);
+    border: 1px solid var(--gold);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .stat-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--burgundy-light), var(--gold));
+    transition: width 0.5s ease;
+  }
+
+  .royaume-row .stat-bar-fill {
+    background: linear-gradient(90deg, #3a5a8a, var(--gold-light));
+  }
+
+  .royaume-hint {
+    font-family: 'EB Garamond', serif;
+    font-size: 10px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.2;
+    color: var(--parchment-dark);
+    text-align: center;
+    margin: -6px 0 6px;
+    opacity: 0.55;
+ }
+
+  .prestige-estimate {
+    font-family: 'EB Garamond', serif;
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--gold-light);
+    text-align: center;
+    margin: 6px 0 4px;
+    opacity: 0.85;
+  }
+
+  .turn-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 0.75rem;
+    color: var(--parchment-dark);
+  }
+  .turn-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    transition: background 0.3s;
+  }
+  .turn-dot.filled { background: var(--gold); }
+  
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .seal-btn {
+    background: var(--parchment);
+    color: var(--ink);
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    box-shadow: 0 3px 0 var(--burgundy), 0 5px 8px rgba(0,0,0,0.3);
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  .seal-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--burgundy), 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .seal-btn .icon { font-size: 1.3rem; margin-bottom: 2px; }
+  .seal-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .chronicle {
+    background: var(--parchment);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    font-style: italic;
+    min-height: 44px;
+    border: 1px solid var(--gold);
+    text-align: center;
+    transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  .chronicle.event-flash {
+    border-color: var(--burgundy);
+    box-shadow: 0 0 0 3px var(--gold-light);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 27, 50, 0.75);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 10;
+  }
+  
+  .modal-overlay.open { display: flex; }
+
+  .quiz-box, .end-box {
+    background: var(--parchment);
+    color: var(--ink);
+    border: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 22px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+
+  .quiz-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--burgundy);
+    text-align: center;
+    margin: 0 0 8px;
+  }
+
+  .quiz-question {
+    font-size: 1.05rem;
+    text-align: center;
+    margin: 0 0 18px;
+    font-weight: 600;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .quiz-option {
+    background: white;
+    border: 2px solid var(--royal-blue);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'EB Garamond', serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  .quiz-option:hover { background: var(--gold-light); }
+  .quiz-option.correct { background: #a8c98a; border-color: #4a7a2e; }
+  .quiz-option.wrong { background: #d99a9a; border-color: var(--burgundy); }
+
+  .quiz-feedback {
+    margin-top: 14px;
+    font-style: italic;
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  .quiz-continue {
+    display: block;
+    margin: 14px auto 0;
+    background: var(--royal-blue);
+    color: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: none;
+  }
+  .quiz-continue.visible { display: block; }
+
+  .end-box.victory { border-color: var(--gold); background: linear-gradient(160deg, var(--parchment), var(--gold-light)); }
+  .end-box.defeat { border-color: var(--burgundy); background: linear-gradient(160deg, var(--parchment), #e0c9c9); }
+
+  .end-emoji { font-size: 2.4rem; margin: 0 0 8px; }
+  .end-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    margin: 0 0 10px;
+    color: var(--burgundy);
+  }
+  .end-box.victory .end-title { color: var(--royal-blue); }
+  .end-message { font-size: 0.95rem; margin: 0 0 6px; }
+
+  .score-compare {
+    background: rgba(27,42,74,0.08);
+    border: 1px dashed var(--royal-blue);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.85rem;
+    margin: 10px 0;
+    text-align: left;
+  }
+  .prestige-gain {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--burgundy);
+    margin: 8px 0 0;
+  }
+
+  .gallery-list {
+    max-height: 320px;
+    overflow-y: auto;
+    text-align: left;
+    margin-top: 10px;
+  }
+  .gallery-entry {
+    border-bottom: 1px solid var(--gold);
+    padding: 8px 2px;
+    font-size: 0.85rem;
+  }
+  .gallery-entry .g-name { font-weight: 600; }
+  .gallery-entry .g-score { color: var(--burgundy); font-size: 0.8rem; }
+  .shop-list {
+    max-height: 340px;
+    overflow-y: auto;
+    text-align: left;
+    margin-top: 10px;
+  }
+  .shop-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid var(--gold);
+    padding: 10px 2px;
+  }
+  .shop-entry-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .shop-entry-desc {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: #555;
+    margin-top: 2px;
+  }
+  .shop-buy-btn {
+    flex-shrink: 0;
+    background: var(--royal-blue);
+    color: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .shop-buy-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    background: #999;
+    border-color: #777;
+    color: #eee;
+  }
+  .gallery-close {
+    display: block;
+    margin: 14px auto 0;
+    background: var(--royal-blue);
+    color: var(--gold-light);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
