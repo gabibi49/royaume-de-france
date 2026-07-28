@@ -552,6 +552,7 @@ function recomputeBonuses() {
     else if (e.type === 'savoirPenaltyReduction') bonuses.savoirPenaltyReduction += e.amount;
     else if (e.type === 'royaumeGainBonus') bonuses.royaumeGainBonus += e.amount;
   }
+  renderOwnedItemsInScene();
 }
 
 function freshStats() {
@@ -565,6 +566,24 @@ function freshStats() {
 function freshRoyaume() {
   return clamp(GAME.START_ROYAUME + bonuses.startRoyaume);
 }
+
+const SHOP_ITEM_SCENE_IDS = {
+  grenier_royal: 'ownedItem-grenier_royal',
+  precepteur_particulier: 'ownedItem-precepteur_particulier',
+  conseiller_clement: 'ownedItem-conseiller_clement',
+  tresorier_habile: 'ownedItem-tresorier_habile',
+  garde_royale: 'ownedItem-garde_royale',
+  cour_joyeuse: 'ownedItem-cour_joyeuse',
+};
+
+function renderOwnedItemsInScene() {
+  for (const [itemId, elId] of Object.entries(SHOP_ITEM_SCENE_IDS)) {
+    const el = document.getElementById(elId);
+    if (!el) continue;
+    el.classList.toggle('visible', ownedItems.has(itemId));
+  }
+}
+
 
 // --- Hauts faits : chaque entrée a une condition, vérifiée à chaque étape clé du jeu ---
 const ACHIEVEMENTS = [
