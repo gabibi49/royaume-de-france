@@ -38,13 +38,28 @@ let prestige = 0;
 let ecus = 0;
 const galleryLog = [];
 
+const achievementStats = {
+  totalCorrectAnswers: 0,
+  totalReignsCompleted: 0,
+  endingsSeen: [],
+  eventsSeenCounts: {},
+  sovereignsCompleted: [],
+  maxSovereignIndexReached: 0,
+  unlockedAchievements: [],
+};
+const correctSpecificAnswers = {};
+let lastPickedSpecificQuestion = null;
+let reignHadWrongAnswer = false;
+let reignMinRoyaume = royaume;
+
 const SAVE_KEY = 'petitDauphinSave';
 
 function saveProgress() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       sovereignIndex, prestige, ecus, galleryLog, proceduralCounters,
-      stats, royaume, actionCount, ownedItems: Array.from(ownedItems)
+      stats, royaume, actionCount, ownedItems: Array.from(ownedItems),
+      achievementStats, correctSpecificAnswers
     }));
   } catch (e) { /* stockage indisponible, on continue sans sauvegarder */ }
 }
@@ -68,6 +83,8 @@ function loadProgress() {
     if (typeof saved.royaume === 'number') royaume = saved.royaume;
     if (typeof saved.actionCount === 'number') actionCount = saved.actionCount;
     if (Array.isArray(saved.ownedItems)) ownedItems = new Set(saved.ownedItems);
+    if (saved.achievementStats) Object.assign(achievementStats, saved.achievementStats);
+    if (saved.correctSpecificAnswers) Object.assign(correctSpecificAnswers, saved.correctSpecificAnswers);
     recomputeBonuses();
   } catch (e) { /* sauvegarde corrompue ou absente, on repart de zéro */ }
 }
@@ -292,10 +309,13 @@ function openEventModal(event) {
 function chooseEventOption(index) {
   const opt = currentChoiceEvent.options[index];
   applyChoiceEffects(opt.effects);
+  const eventId = currentChoiceEvent.id;
+  achievementStats.eventsSeenCounts[eventId] = (achievementStats.eventsSeenCounts[eventId] || 0) + 1;
   document.getElementById('eventOverlay').classList.remove('open');
   setChronicle(opt.outcome);
   flashChronicle();
   currentChoiceEvent = null;
+  evaluateAchievements();
   updateBars();
   saveProgress();
 }
@@ -507,6 +527,88 @@ function freshRoyaume() {
   return clamp(GAME.START_ROYAUME + bonuses.startRoyaume);
 }
 
+// --- Hauts faits : chaque entrée a une condition, vérifiée à chaque étape clé du jeu ---
+const ACHIEVEMENTS = [
+  { id: 'sans_faute', icon: '🎯', name: 'Sans faute',
+    description: "Être couronné sans avoir raté un seul quiz pendant le règne.",
+    check: (ctx) => ctx.event === 'endRun' && ctx.cause === 'victory' && !reignHadWrongAnswer },
+  { id: 'premier_de_la_classe', icon: '📚', name: 'Premier de la classe',
+    description: "Répondre correctement à 50 quiz au total.",
+    check: () => achievementStats.totalCorrectAnswers >= 50 },
+  { id: 'erudit', icon: '🎓', name: 'Érudit',
+    description: "Répondre correctement à toutes les questions spécifiques d'un souverain.",
+    check: (ctx) => {
+      if (ctx.event !== 'endRun') return false;
+      const specific = SOVEREIGN_QUESTIONS[ctx.sovereign.name];
+      if (!specific) return false;
+      return (correctSpecificAnswers[ctx.sovereign.name] || []).length >= specific.length;
+    } },
+  { id: 'surpasser_histoire', icon: '👑', name: "Surpasser l'Histoire",
+    description: "Être couronné avec un score supérieur au score réel du souverain.",
+    check: (ctx) => ctx.event === 'endRun' && ctx.cause === 'victory' && ctx.sovereign.score !== null && ctx.finalScore > ctx.sovereign.score },
+  { id: 'age_dor', icon: '✨', name: "Âge d'or",
+    description: "Avoir les 3 jauges (Faim, Bonheur, Savoir) au-dessus de 90 en même temps.",
+    check: () => stats.faim > 90 && stats.bonheur > 90 && stats.savoir > 90 },
+  { id: 'regne_parfait', icon: '💯', name: 'Règne parfait',
+    description: "Être couronné avec les 3 jauges à 100.",
+    check: (ctx) => ctx.event === 'endRun' && ctx.cause === 'victory' && stats.faim === 100 && stats.bonheur === 100 && stats.savoir === 100 },
+  { id: 'fil_du_rasoir', icon: '⚖️', name: 'Sur le fil du rasoir',
+    description: "Être couronné après être descendu sous 15 de Royaume pendant le règne.",
+    check: (ctx) => ctx.event === 'endRun' && ctx.cause === 'victory' && reignMinRoyaume < 15 },
+  { id: 'rescape_peste', icon: '🩹', name: 'Rescapé de la peste',
+    description: "Vivre 5 fois l'événement de l'épidémie.",
+    check: () => (achievementStats.eventsSeenCounts['epidemie'] || 0) >= 5 },
+  { id: 'toutes_les_fins', icon: '📖', name: 'Toutes les fins',
+    description: "Avoir vécu chacune des 5 issues possibles au moins une fois.",
+    check: () => ['faim', 'bonheur', 'savoir', 'royaume', 'victory'].every(c => achievementStats.endingsSeen.includes(c)) },
+  { id: 'merovingiens', icon: '🔥', name: 'Les Mérovingiens',
+    description: "Terminer les 4 souverains mérovingiens.",
+    check: () => ['Clovis Ier', 'Clotaire Ier', 'Dagobert Ier', 'Childeric III'].every(n => achievementStats.sovereignsCompleted.includes(n)) },
+  { id: 'grand_siecle', icon: '⛲', name: 'Le Grand Siècle',
+    description: "Terminer le règne de Louis XIV.",
+    check: () => achievementStats.sovereignsCompleted.includes('Louis XIV') },
+  { id: 'au_dela_des_rois', icon: '📜', name: 'Au-delà des rois',
+    description: "Atteindre les prétendants non couronnés.",
+    check: () => achievementStats.maxSovereignIndexReached >= REAL_COUNT },
+  { id: 'lignee_imaginaire', icon: '🌫️', name: 'La lignée imaginaire',
+    description: "Atteindre les souverains procéduraux.",
+    check: () => achievementStats.maxSovereignIndexReached >= SOVEREIGNS.length },
+  { id: 'tous_les_dilemmes', icon: '🎭', name: 'Tous les dilemmes',
+    description: "Rencontrer chacun des événements à choix au moins une fois.",
+    check: () => choiceEvents.every(e => (achievementStats.eventsSeenCounts[e.id] || 0) >= 1) },
+  { id: 'premier_tresor', icon: '🪙', name: 'Premier trésor',
+    description: "Acheter un premier objet à la boutique.",
+    check: () => ownedItems.size >= 1 },
+  { id: 'boutique_complete', icon: '💎', name: 'Boutique complète',
+    description: "Posséder tous les objets de la boutique.",
+    check: () => ownedItems.size >= SHOP_ITEMS.length },
+  { id: 'dynastie_etablie', icon: '🏛️', name: 'Dynastie établie',
+    description: "Terminer 10 règnes au total.",
+    check: () => achievementStats.totalReignsCompleted >= 10 },
+];
+
+function evaluateAchievements(ctx = {}) {
+  let order = 0;
+  let unlockedSomething = false;
+  for (const ach of ACHIEVEMENTS) {
+    if (achievementStats.unlockedAchievements.includes(ach.id)) continue;
+    if (ach.check(ctx)) {
+      achievementStats.unlockedAchievements.push(ach.id);
+      showAchievementToast(ach, order);
+      order += 1;
+      unlockedSomething = true;
+    }
+  }
+  if (unlockedSomething) saveProgress();
+}
+
+function showAchievementToast(ach, order = 0) {
+  setTimeout(() => {
+    setChronicle(`🏆 Haut fait débloqué : ${ach.icon} ${ach.name}`);
+    flashChronicle();
+  }, 1500 + order * 2000);
+}
+
 function buyItem(id) {
   const item = SHOP_ITEMS.find(i => i.id === id);
   if (!item || ownedItems.has(id)) return;
@@ -518,6 +620,7 @@ function buyItem(id) {
   ecus -= item.cost;
   ownedItems.add(id);
   recomputeBonuses();
+  evaluateAchievements();
   saveProgress();
   document.getElementById('ecusValue').textContent = '🪙 Écus : ' + ecus;
   setChronicle(item.name + ' rejoint votre trésor royal !');
@@ -578,6 +681,8 @@ function updateFlag() {
 }
 
 function updateBars() {
+  if (royaume < reignMinRoyaume) reignMinRoyaume = royaume;
+  evaluateAchievements();
   document.getElementById('bar-faim').style.width = stats.faim + '%';
   document.getElementById('bar-bonheur').style.width = stats.bonheur + '%';
   document.getElementById('bar-savoir').style.width = stats.savoir + '%';
@@ -628,9 +733,11 @@ function pickTeachQuestion() {
       let idx;
       do { idx = Math.floor(Math.random() * specific.length); } while (usedList.includes(idx));
       usedList.push(idx);
+      lastPickedSpecificQuestion = { name: sovereign.name, idx };
       return specific[idx];
     }
   }
+  lastPickedSpecificQuestion = null;
   return pickQuestion('teach');
 }
   
@@ -690,14 +797,22 @@ function closeQuiz() {
   if (pendingCorrect) {
     stats[cfg.stat] = clamp(stats[cfg.stat] + cfg.successGain);
     royaume = clamp(royaume + cfg.royaumeSuccess + bonuses.royaumeGainBonus);
+    achievementStats.totalCorrectAnswers += 1;
+    if (currentAction === 'teach' && lastPickedSpecificQuestion) {
+      const { name, idx } = lastPickedSpecificQuestion;
+      if (!correctSpecificAnswers[name]) correctSpecificAnswers[name] = [];
+      if (!correctSpecificAnswers[name].includes(idx)) correctSpecificAnswers[name].push(idx);
+    }
   } else {
     if (cfg.stat !== 'savoir') {
       stats[cfg.stat] = clamp(stats[cfg.stat] + cfg.failGain);
     }
     stats.savoir = clamp(stats.savoir - Math.max(GAME.WRONG_ANSWER_SAVOIR_PENALTY - bonuses.savoirPenaltyReduction, 0));
     royaume = clamp(royaume + cfg.royaumeFail);
+    reignHadWrongAnswer = true;
   }
 
+  evaluateAchievements();
   if (cfg.move) moveCharacter();
   updateBars();
   registerAction();
@@ -827,6 +942,11 @@ function endRun(cause) {
     prestigeGain,
   });
 
+  achievementStats.totalReignsCompleted += 1;
+  if (!achievementStats.endingsSeen.includes(cause)) achievementStats.endingsSeen.push(cause);
+  if (!achievementStats.sovereignsCompleted.includes(sovereign.name)) achievementStats.sovereignsCompleted.push(sovereign.name);
+  evaluateAchievements({ event: 'endRun', cause, sovereign, finalScore });
+
   if (cause === 'victory') {
     document.getElementById('character').classList.add('is-king');
     document.getElementById('crown').classList.add('visible');
@@ -873,6 +993,9 @@ function nextSovereign() {
 
   stats = freshStats();
   royaume = freshRoyaume();
+  reignHadWrongAnswer = false;
+  reignMinRoyaume = royaume;
+  achievementStats.maxSovereignIndexReached = Math.max(achievementStats.maxSovereignIndexReached, sovereignIndex);
   isKing = false;
   gameOver = false;
   position = 40;
@@ -957,6 +1080,9 @@ window.jumpTo = function(target) {
   sovereignIndex = index;
   stats = freshStats();
   royaume = freshRoyaume();
+  reignHadWrongAnswer = false;
+  reignMinRoyaume = royaume;
+  achievementStats.maxSovereignIndexReached = Math.max(achievementStats.maxSovereignIndexReached, sovereignIndex);
   isKing = false;
   gameOver = false;
   actionCount = 0;
@@ -973,6 +1099,8 @@ window.jumpTo = function(target) {
 
   
 loadProgress();
+reignMinRoyaume = royaume;
+achievementStats.maxSovereignIndexReached = Math.max(achievementStats.maxSovereignIndexReached, sovereignIndex);
 recomputeBonuses();
 updateSovereignHeader();
 updateTurnCounter();
