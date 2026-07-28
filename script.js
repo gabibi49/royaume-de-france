@@ -16,6 +16,7 @@ const GAME = {
   DECAY_ROYAUME: 1,
   FEED_PLAY_GAIN: 20,             // gain de jauge sur quiz réussi (nourrir / jouer)
   TEACH_GAIN: 25,                 // gain de jauge sur quiz réussi (instruire)
+  CONSCIENCE_GAIN: 15,            // gain de Bonheur sur cas de conscience résolu avec vertu
   FAIL_GAIN: 8,                   // gain de jauge sur quiz raté (le dauphin progresse un peu quand même)
   ROYAUME_ON_QUIZ_SUCCESS: 2,     // réduit (était 5) : trop élevé, rendait la chute à 0 quasi impossible
   ROYAUME_ON_QUIZ_FAIL: -2,       // nouveau : une mauvaise réponse coûte aussi de l'Autorité, pas seulement du Savoir
@@ -388,6 +389,36 @@ const teachBank = [
   { q: "Quel roi de France meurt accidentellement lors d'un tournoi en 1559 ?", options: ["Henri II", "François Ier", "Charles IX"], correct: 0 },
 ];
 
+  const conscienceBank = [
+  { q: "Tu croises un mendiant affamé aux portes du château alors que ta bourse est pleine. Que fais-tu ?",
+    options: ["Détourner le regard sans t'arrêter", "Lui donner une part de ta bourse par charité", "Le chasser car il salit l'entrée"], correct: 1 },
+  { q: "Un page a cassé un vase précieux et accuse à tort un autre serviteur. Tu sais la vérité. Que fais-tu ?",
+    options: ["Dire la vérité pour protéger l'innocent", "Te taire pour ne pas te mêler des affaires des domestiques", "Accuser toi aussi l'innocent"], correct: 0 },
+  { q: "Ton précepteur t'a puni injustement pour une faute que tu n'as pas commise. Comment réagir avec vertu ?",
+    options: ["Te venger en le dénonçant faussement", "Accepter la punition sans haine, puis t'expliquer calmement", "Mentir pour rejeter la faute sur un autre"], correct: 1 },
+  { q: "Tu as promis à un ami de lui rendre un livre que tu apprécies beaucoup. Que dois-tu faire ?",
+    options: ["Garder le livre en prétendant l'avoir perdu", "Le rendre abîmé volontairement", "Tenir ta promesse et le rendre"], correct: 2 },
+  { q: "Un ennemi de ta famille tombe gravement malade et personne ne veut l'aider. Que dois-tu faire, par charité ?",
+    options: ["L'aider malgré tout", "Te réjouir de son malheur", "Ignorer sa souffrance, il ne le mérite pas"], correct: 0 },
+  { q: "Lors d'un banquet, tu es rassasié mais on te sert encore. Que fais-tu, par tempérance ?",
+    options: ["Manger quand même pour ne pas vexer l'hôte", "Refuser poliment le surplus", "Manger puis tout jeter en cachette"], correct: 1 },
+  { q: "Un noble te flatte exagérément pour obtenir une faveur injuste. Comment agir avec droiture ?",
+    options: ["Accorder la faveur, le compliment était agréable", "Refuser la faveur malgré les flatteries", "Accorder la faveur mais en exiger davantage"], correct: 1 },
+  { q: "Tu as menti une fois à ton confesseur par honte. Que dois-tu faire ensuite ?",
+    options: ["Ne jamais y retourner pour éviter la honte", "Mentir de nouveau pour couvrir le premier mensonge", "Revenir avouer la vérité"], correct: 2 },
+  { q: "Ton frère cadet a reçu un plus bel habit que le tien pour la fête. Que faire de ta jalousie ?",
+    options: ["Bouder et refuser de participer à la fête", "Te réjouir sincèrement pour lui", "Abîmer son habit en secret"], correct: 1 },
+  { q: "Un vieux serviteur travaille trop lentement à ton goût. Comment le traiter avec justice ?",
+    options: ["L'humilier devant les autres pour le faire réagir", "Le renvoyer sans un mot de reconnaissance", "Faire preuve de patience et respecter sa dignité"], correct: 2 },
+  { q: "Tu trouves une bourse perdue par un marchand dans la cour. Personne ne t'a vu. Que fais-tu ?",
+    options: ["La garder, personne ne le saura", "Chercher le marchand pour la lui rendre", "La partager avec un ami en cachette"], correct: 1 },
+  { q: "On te demande de témoigner contre un ami que tu sais coupable d'une faute grave. Que dois-tu faire ?",
+    options: ["Mentir pour le protéger", "Refuser de témoigner pour ne pas choisir", "Dire la vérité, même si cela te coûte son amitié"], correct: 2 },
+  { q: "Un dimanche, on te propose une grande chasse alors que la messe t'attend. Que choisis-tu ?",
+    options: ["Partir chasser et prier plus tard", "Te rendre à la messe avant toute autre distraction", "N'aller ni à l'un ni à l'autre par paresse"], correct: 1 },
+  { q: "Un paysan vient se plaindre d'un impôt qu'il juge injuste. Comment l'écouter en prince juste ?",
+    options: ["Le renvoyer sans l'entendre", "Le punir pour avoir osé se plaindre", "L'écouter avec attention et examiner sincèrement sa plainte"], correct: 2 },
+];
   const SOVEREIGN_QUESTIONS = {
   'Clovis Ier': [
     { q: "Vers quelle année Clovis a-t-il été baptisé à Reims ?", options: ["496", "800", "987"], correct: 0 },
@@ -462,9 +493,17 @@ const actionConfig = {
     wrongLine: "Pas tout à fait... mais il progresse un peu quand même.",
     move: false,
   },
+  conscience: {
+    eyebrow: "Cas de conscience", bank: conscienceBank, stat: 'bonheur',
+    successGain: GAME.CONSCIENCE_GAIN, failGain: GAME.FAIL_GAIN,
+    royaumeSuccess: GAME.ROYAUME_ON_QUIZ_SUCCESS, royaumeFail: GAME.ROYAUME_ON_QUIZ_FAIL,
+    correctLine: "Le dauphin a choisi la voie de la vertu. Son âme s'apaise.",
+    wrongLine: "Ce n'était pas le choix le plus vertueux... mais il en tirera leçon.",
+    move: false,
+  },
 };
 
-const usedQuestions = { feed: [], play: [], teach: [] };
+const usedQuestions = { feed: [], play: [], teach: [], conscience: [] };
 let currentAction = null;
 let pendingCorrect = false;
 
@@ -663,7 +702,7 @@ function setChronicle(text) {
 }
 
 function setButtonsDisabled(disabled) {
-  ['btn-feed', 'btn-play', 'btn-teach', 'btn-rest'].forEach(id => {
+  ['btn-feed', 'btn-play', 'btn-teach', 'btn-conscience'].forEach(id => {
     document.getElementById(id).disabled = disabled;
   });
 }
@@ -818,14 +857,7 @@ function closeQuiz() {
   registerAction();
 }
 
-function rest() {
-  if (gameOver) return;
-  stats.bonheur = clamp(stats.bonheur + GAME.REST_BONHEUR_GAIN);
-  stats.faim = clamp(stats.faim + GAME.REST_FAIM_GAIN);
-  setChronicle("Le dauphin fait la sieste sous un dais. Il se repose, bercé par les ménestrels.");
-  updateBars();
-  registerAction();
-}
+
 
 // --- Fins de partie ---
 const endContent = {
