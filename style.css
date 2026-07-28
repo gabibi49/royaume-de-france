@@ -164,12 +164,46 @@
     transition: opacity 0.4s;
   }
 
+  .owned-items {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .owned-item {
+    position: absolute;
+    display: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .owned-item.visible { display: block; opacity: 1; transform: translateY(0); }
+  .owned-item svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+  .owned-grenier { bottom: 26px; left: 4px; width: 40px; height: 32px; }
+  .owned-precepteur { bottom: 30px; left: 95px; width: 24px; height: 46px; }
+  .owned-conseiller { bottom: 30px; left: 190px; width: 24px; height: 46px; opacity: 0.9; }
+  .owned-tresorier { bottom: 30px; left: 240px; width: 24px; height: 42px; }
+  .owned-garde { bottom: 30px; left: 290px; width: 26px; height: 48px; }
+
+  .owned-cour-joyeuse {
+    top: 6px;
+    left: 50%;
+    width: 78%;
+    height: 20px;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  .owned-cour-joyeuse.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .character {
     position: absolute;
     bottom: 30px;
     left: 40px;
     width: 60px;
     height: 90px;
+    z-index: 3;
     transition: left 2.2s ease-in-out, transform 0.8s ease;
     animation: bob 1.4s ease-in-out infinite;
   }
